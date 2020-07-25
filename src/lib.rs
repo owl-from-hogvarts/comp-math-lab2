@@ -5,13 +5,6 @@
 
 #![feature(lang_items)]
 
-#[lang = "eh_personality"]
-#[no_mangle]
-pub unsafe extern "C" fn rust_eh_personality() -> () {
-}
 
-#[panic_handler]
-fn panic(_info: &::core::panic::PanicInfo) -> ! {
-    loop {}
-}
-
+#[cfg(not(test))] // Disable the stubs for test because #[no_std] is ignored there because libtest depends on it.
+mod stubs;
