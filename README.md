@@ -21,8 +21,17 @@ error: aborting due to 2 previous errors
 
 Add the following to your crate's `Cargo.toml`:
 
-```
+```toml
 [dependencies]
 avr-std-stub = "1.0"
 ```
 
+Then add the following to your crate's `lib.rs` or `main.rs`
+
+```rust
+extern crate avr_std_stub;
+
+```
+
+**NOTE**: You **must** add an `extern crate` declaration, otherwise the crate will not be linked
+and the definitions it provides will not be used.
