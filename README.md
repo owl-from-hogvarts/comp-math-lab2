@@ -17,3 +17,12 @@ error: language item required, but not found: `eh_personality`
 error: aborting due to 2 previous errors
 ```
 
+## Usage
+
+Add the following to your crate's `Cargo.toml`:
+
+```
+[dependencies]
+avr-std-stub = "1.0"
+```
+
