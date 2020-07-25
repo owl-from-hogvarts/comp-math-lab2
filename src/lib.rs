@@ -1,4 +1,5 @@
-//! Defines simple implementations of required language items that `libstd` normally defines.
+//! Contains simple implementations of required language items that `libstd` normally defines on
+//! other targets.
 
 #![no_std]
 

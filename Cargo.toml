@@ -1,9 +1,13 @@
 [package]
 name = "avr-std-stub"
 version = "0.1.0"
-authors = ["Dylan McKay <me@dylanmckay.io>"]
+authors = ["The AVR-Rust Project Developers", "Dylan McKay <me@dylanmckay.io>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Contains simple implementations of required language items that `libstd` normally defines on other targets"
+repository = "https://github.com/avr-rust/avr-std-stub"
+documentation = "https://docs.rs/avr-std-stub"
+categories = ["embedded", "no-std", "hardware-support"]
+license = "MIT"
 
 [dependencies]
