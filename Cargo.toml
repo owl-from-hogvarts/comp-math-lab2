@@ -1,6 +1,6 @@
 [package]
 name = "avr-std-stub"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["The AVR-Rust Project Developers", "Dylan McKay <me@dylanmckay.io>"]
 edition = "2018"
 
