@@ -10,4 +10,6 @@ documentation = "https://docs.rs/avr-std-stub"
 categories = ["embedded", "no-std", "hardware-support"]
 license = "MIT"
 
+readme = "README.md"
+
 [dependencies]
