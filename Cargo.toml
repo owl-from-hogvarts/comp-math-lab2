@@ -1,0 +1,11 @@
+[package]
+name = "arduino"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ruduino = "0.4.0" 
+avr-libc = "0.2.2"
+# protocol = { path = "../protocol" }
