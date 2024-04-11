@@ -10,10 +10,9 @@
 use core::arch::asm;
 use core::panic::PanicInfo;
 
-use ruduino::cores::current::{port, SREG, USART0};
-use ruduino::interrupt::without_interrupts;
-use ruduino::modules::HardwareUsart;
-use ruduino::{Pin, Register};
+use ring_buffer::RingBuffer;
+use ruduino::cores::current::port;
+use ruduino::Pin;
 
 mod lazy;
 mod ring_buffer;
@@ -33,15 +32,15 @@ pub extern "C" fn main() {
     // let result = a + b;
     // let bytes = result.to_le_bytes();
     unsafe { asm!("SEI") }
-    // let bytes: [u8; 4] = [0xde, 0xad, 0xbe, 0xef];
-    // for byte in bytes {
-    // if let WriteStatus::Blocked = usart::USART.write_byte_blocking(byte) {
-    // break;
-    // }
-    // }
-    let hello_world = "Hello world";
-    for byte in hello_world.bytes() {
-        usart::USART.write_byte(byte);
+    let mut input_buffer = RingBuffer::<u8, 80>::new();
+    loop {
+        let byte = usart::USART.read_byte_blocking();
+        input_buffer.push_back(byte);
+        if byte == '\n' as u8 {
+            while let Some(byte) = input_buffer.pop_front() {
+                usart::USART.write_byte_blocking(byte);
+            }
+        }
     }
 }
 
@@ -100,17 +99,9 @@ extern "avr-interrupt" fn __vector_14() {}
 #[no_mangle]
 extern "avr-interrupt" fn __vector_15() {}
 #[no_mangle]
-extern "avr-interrupt" fn __vector_16() {
-    // blink(10, 50);
-}
+extern "avr-interrupt" fn __vector_16() {}
 #[no_mangle]
-extern "avr-interrupt" fn __vector_17() {
-    // blink(10, 50);
-}
-#[no_mangle]
-extern "avr-interrupt" fn __vector_18() {
-    // blink(10, 50);
-}
+extern "avr-interrupt" fn __vector_17() {}
 #[no_mangle]
 extern "avr-interrupt" fn __vector_20() {}
 #[no_mangle]

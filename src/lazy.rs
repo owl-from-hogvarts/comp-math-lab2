@@ -1,8 +1,6 @@
 use core::ops::Deref;
 
-use ruduino::{cores::current::SREG, interrupt::without_interrupts};
-
-use crate::blink;
+use ruduino::interrupt::without_interrupts;
 
 enum LazyState<T, F> {
     Uninit(F),

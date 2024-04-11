@@ -61,8 +61,7 @@ struct UsartConfig {
     pub baud_rate: u32,
 }
 
-pub enum WriteStatus {
-    Success,
+pub enum UsartError {
     Blocked,
 }
 
@@ -82,7 +81,9 @@ impl Usart<USART0> {
             // <USART0 as HardwareUsart>::ControlRegisterA::set(UCSR0A::U2X0);
             <USART0 as HardwareUsart>::ControlRegisterA::write(0);
             // enable usart
-            <USART0 as HardwareUsart>::ControlRegisterB::set(UCSR0B::TXEN0 | UCSR0B::TXCIE0);
+            <USART0 as HardwareUsart>::ControlRegisterB::set(
+                UCSR0B::TXEN0 | UCSR0B::UDRIE0 | UCSR0B::RXCIE0 | UCSR0B::RXEN0,
+            );
             // configuration register
             let config = <OperationMode as Into<u8>>::into(OperationMode::Async)
                 | (1 << avr_libc::UCSZ01)
@@ -99,7 +100,7 @@ impl Usart<USART0> {
         })
     }
 
-    pub fn write_byte(&self, byte: u8) -> WriteStatus {
+    pub fn write_byte(&self, byte: u8) -> Result<(), UsartError> {
         without_interrupts(|| {
             let inner = unsafe { self.get_inner_mut() };
             match inner.state {
@@ -107,9 +108,12 @@ impl Usart<USART0> {
                     // inner.state = State::Buffer;
                     // when status is idle, it's guaranteed that write buffer is empty
                     inner.write_buffer.push_back(byte);
-                    // unsafe { inner.write_byte_actual() };
                     inner.set_state(State::Buffer);
-                    WriteStatus::Success
+                    // SAFETY: write_byte_acruall always pops bytes from the front of
+                    // of the ring buffer. So order of bytes is preserved
+                    // this call is required to procceed even when interrupts are disabled
+                    unsafe { inner.write_byte_actual() };
+                    Ok(())
                 }
                 State::Buffer => return inner.write_buffer.push_back(byte).into(),
                 // State::Transfer(_) => todo!(),
@@ -117,22 +121,36 @@ impl Usart<USART0> {
         })
     }
 
-    pub fn read_byte(&self) {}
+    pub fn read_byte(&self) -> Result<u8, UsartError> {
+        without_interrupts(|| {
+            let inner = unsafe { self.get_inner_mut() };
+            inner.read_buffer.pop_front().ok_or(UsartError::Blocked)
+        })
+    }
+
+    pub fn read_byte_blocking(&self) -> u8 {
+        loop {
+            match self.read_byte() {
+                Ok(byte) => break byte,
+                Err(UsartError::Blocked) => continue,
+            }
+        }
+    }
 
     unsafe fn get_inner_mut(&self) -> &mut UsartInner<USART0> {
         &mut *self.inner.get()
     }
 
     pub fn write_byte_blocking(&self, byte: u8) {
-        without_interrupts(|| while let WriteStatus::Blocked = self.write_byte(byte) {});
+        while let Err(UsartError::Blocked) = self.write_byte(byte) {}
     }
 }
 
-impl From<ring_buffer::Status> for WriteStatus {
+impl From<ring_buffer::Status> for Result<(), UsartError> {
     fn from(value: ring_buffer::Status) -> Self {
         match value {
-            ring_buffer::Status::Success => WriteStatus::Success,
-            ring_buffer::Status::BufferFull => WriteStatus::Blocked,
+            ring_buffer::Status::Success => Ok(()),
+            ring_buffer::Status::BufferFull => Err(UsartError::Blocked),
         }
     }
 }
@@ -149,6 +167,7 @@ impl UsartInner<USART0> {
         self.state = state;
     }
 
+    /// in case of buffer overflow excessive bytes are silently discarded
     unsafe fn read_byte_actual(&mut self) {
         let byte = <USART0 as HardwareUsart>::DataRegister::read();
         self.read_buffer.push_back(byte);
