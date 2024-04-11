@@ -1,6 +1,6 @@
-use core::ops::{Deref, DerefMut};
+use core::ops::Deref;
 
-use ruduino::interrupt::without_interrupts;
+use ruduino::{cores::current::SREG, interrupt::without_interrupts};
 
 use crate::blink;
 
@@ -46,10 +46,21 @@ impl<T, F: FnOnce() -> T> Deref for Lazy<T, F> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        without_interrupts(|| match &self.state {
-            LazyState::Uninit(_) => self.init(),
-            LazyState::Init(data) => data,
-            LazyState::Poisoned => panic!("LazyCell has previously been poisoned"),
+        without_interrupts(|| {
+            let data = match &self.state {
+                LazyState::Uninit(_) => self.init(),
+                LazyState::Init(data) => data,
+                LazyState::Poisoned => {
+                    panic!("LazyCell has previously been poisoned")
+                }
+            };
+            data
         })
+
+        // blink(100, 50);
+        // if !<SREG as ruduino::Register>::is_set(SREG::I) {
+        // }
+
+        // data
     }
 }
