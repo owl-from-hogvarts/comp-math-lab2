@@ -1,0 +1,5 @@
+
+[language-server.rust-analyzer]
+config = { cargo = { target = "avr-unknown-gnu-atmega328" }, runnables =  { extraArgs = ["--release", "-Z", "unstable-options", "--", "-Z", "unstable-options" ] } }
+
+
