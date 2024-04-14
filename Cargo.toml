@@ -9,7 +9,7 @@ edition = "2021"
 ruduino = "0.4.0" 
 avr-libc = "0.2.2"
 # avr-device = "0.5.4"
-# protocol = { path = "../protocol" }
+protocol = { path = "../protocol" }
 
 [profile.release]
 # debug = "full"

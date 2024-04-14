@@ -10,11 +10,14 @@
 use core::arch::asm;
 use core::panic::PanicInfo;
 
+use protocol_handler::Connection;
 use ring_buffer::RingBuffer;
 use ruduino::cores::current::port;
 use ruduino::Pin;
 
+mod equations;
 mod lazy;
+mod protocol_handler;
 mod ring_buffer;
 mod usart;
 
@@ -26,12 +29,13 @@ pub struct Pixel {
 
 #[no_mangle]
 pub extern "C" fn main() {
-    // let a: f64 = 1.;
-    // let b: f64 = 2.;
-
-    // let result = a + b;
-    // let bytes = result.to_le_bytes();
     unsafe { asm!("SEI") }
+
+    // repeatedly send protocol signature
+    // when correct protocol singature is echoed back
+    // await for request
+    let connection = Connection::new(&*usart::USART);
+
     let mut input_buffer = RingBuffer::<u8, 80>::new();
     loop {
         let byte = usart::USART.read_byte_blocking();
