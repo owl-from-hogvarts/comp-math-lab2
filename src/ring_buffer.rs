@@ -2,8 +2,6 @@ use core::ops::{Add, Index, IndexMut};
 
 use ruduino::interrupt::without_interrupts;
 
-use crate::blink;
-
 #[derive(Clone, Copy)]
 struct RingIndex<const N: usize> {
     index: usize,

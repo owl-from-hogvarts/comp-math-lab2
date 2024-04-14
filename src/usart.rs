@@ -6,13 +6,11 @@ use ruduino::cores::current::SREG;
 use ruduino::cores::current::UCSR0A;
 use ruduino::cores::current::UCSR0B;
 use ruduino::cores::current::USART0;
-use ruduino::delay::delay_ms;
 use ruduino::modules::HardwareUsart;
 use ruduino::Register;
 
 use ruduino::interrupt::without_interrupts;
 
-use crate::blink;
 use crate::lazy::Lazy;
 use crate::ring_buffer;
 use crate::ring_buffer::RingBuffer;
@@ -22,7 +20,11 @@ const MAX_FRAME_SIZE: usize = 50;
 enum State {
     Idle,
     Buffer,
-    // Transfer(&'a [u8]),
+    // idea with transfers is discarded
+    // transfers are redundant here:
+    // they complicate logic alot, while theirs functions
+    // can be emulated easily with blocking read and writes
+    // to arrays
 }
 
 unsafe impl Sync for Usart<USART0> {}
@@ -70,7 +72,7 @@ pub static USART: Lazy<Usart<USART0>> =
     Lazy::new(|| Usart::configre(UsartConfig { baud_rate: 250_000 }));
 
 impl Usart<USART0> {
-    pub fn configre(UsartConfig { baud_rate }: UsartConfig) -> Usart<USART0> {
+    fn configre(UsartConfig { baud_rate }: UsartConfig) -> Usart<USART0> {
         without_interrupts(|| {
             // set maximum baud rate
             <USART0 as HardwareUsart>::BaudRateRegister::write(
@@ -105,20 +107,20 @@ impl Usart<USART0> {
             let inner = unsafe { self.get_inner_mut() };
             match inner.state {
                 State::Idle => {
-                    // inner.state = State::Buffer;
                     // when status is idle, it's guaranteed that write buffer is empty
                     inner.write_buffer.push_back(byte);
-                    inner.set_state(State::Buffer);
-                    // SAFETY: write_byte_acruall always pops bytes from the front of
-                    // of the ring buffer. So order of bytes is preserved
-                    // this call is required to procceed even when interrupts are disabled
-                    unsafe { inner.write_byte_actual() };
+                    unsafe { inner.set_state(State::Buffer) };
                     Ok(())
                 }
                 State::Buffer => return inner.write_buffer.push_back(byte).into(),
-                // State::Transfer(_) => todo!(),
             }
         })
+    }
+
+    pub fn write_blocking(&self, data: &[u8]) {
+        for &byte in data {
+            self.write_byte_blocking(byte);
+        }
     }
 
     pub fn read_byte(&self) -> Result<u8, UsartError> {
@@ -126,6 +128,12 @@ impl Usart<USART0> {
             let inner = unsafe { self.get_inner_mut() };
             inner.read_buffer.pop_front().ok_or(UsartError::Blocked)
         })
+    }
+
+    pub fn read_blocking(&self, buffer: &mut [u8]) {
+        for byte in buffer {
+            *byte = self.read_byte_blocking();
+        }
     }
 
     pub fn read_byte_blocking(&self) -> u8 {
@@ -156,7 +164,7 @@ impl From<ring_buffer::Status> for Result<(), UsartError> {
 }
 
 impl UsartInner<USART0> {
-    fn set_state(&mut self, state: State) {
+    unsafe fn set_state(&mut self, state: State) {
         match state {
             State::Idle => {
                 unsafe { self.disable_output() };
@@ -176,9 +184,7 @@ impl UsartInner<USART0> {
     unsafe fn write_byte_actual(&mut self) {
         let byte = self.write_buffer.pop_front();
         match byte {
-            Some(byte) => unsafe {
-                <USART0 as HardwareUsart>::DataRegister::write(byte);
-            },
+            Some(byte) => <USART0 as HardwareUsart>::DataRegister::write(byte),
             None => self.set_state(State::Idle),
         }
     }
