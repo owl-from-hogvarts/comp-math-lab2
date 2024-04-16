@@ -10,6 +10,8 @@
 use core::arch::asm;
 use core::panic::PanicInfo;
 
+use equations::{NonLinearEquation, Pow, LEFT_BORDER, POINT_INTERVAL_LENGTH};
+use protocol::point::Point;
 use protocol_handler::Connection;
 use ring_buffer::RingBuffer;
 use ruduino::cores::current::port;
@@ -21,6 +23,8 @@ mod protocol_handler;
 mod ring_buffer;
 mod usart;
 
+use crate::equations::Trigonometry;
+
 pub struct Pixel {
     red: u8,
     green: u8,
@@ -31,25 +35,36 @@ pub struct Pixel {
 pub extern "C" fn main() {
     unsafe { asm!("SEI") }
 
-    // repeatedly send protocol signature
-    // when correct protocol singature is echoed back
-    // await for request
-    let connection = Connection::new(&*usart::USART);
+    let equations: [NonLinearEquation; 1] = [
+        NonLinearEquation {
+            function: |x: f64| x.pow(2_f64) + x + x.sin(),
+            first_derevative: |x: f64| 2_f64 * x + 1_f64 + x.cos(),
+        },
+        // NonLinearEquation {
+        //     function: todo!(),
+        //     first_derevative: todo!(),
+        // },
+        // NonLinearEquation {
+        //     function: todo!(),
+        //     first_derevative: todo!(),
+        // },
+    ];
 
-    let mut input_buffer = RingBuffer::<u8, 80>::new();
+    let mut connection = Connection::new(&*usart::USART);
+    let mut handler = |index| {
+        let equation = &equations[0];
+        let x = LEFT_BORDER + POINT_INTERVAL_LENGTH * index as f64;
+        Point::new(x, (equation.function)(x))
+    };
+    connection.set_points_handler(&mut handler);
+
     loop {
-        let byte = usart::USART.read_byte_blocking();
-        input_buffer.push_back(byte);
-        if byte == '\n' as u8 {
-            while let Some(byte) = input_buffer.pop_front() {
-                usart::USART.write_byte_blocking(byte);
-            }
-        }
+        connection.handle_request();
     }
 }
 
 #[panic_handler]
-fn panic_handler(data: &PanicInfo) -> ! {
+fn panic_handler(_data: &PanicInfo) -> ! {
     loop {
         blink(5, 50);
     }
