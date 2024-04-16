@@ -63,6 +63,7 @@ struct UsartConfig {
     pub baud_rate: u32,
 }
 
+#[derive(Debug)]
 pub enum UsartError {
     Blocked,
 }
@@ -130,6 +131,22 @@ impl Usart<USART0> {
         })
     }
 
+    pub fn read(&self, buffer: &mut [u8]) -> Result<(), UsartError> {
+        without_interrupts(|| {
+            let inner: &UsartInner<USART0> = unsafe { self.get_inner_mut() };
+            if inner.read_buffer.size() < buffer.len() {
+                return Err(UsartError::Blocked);
+            }
+
+            for byte in buffer {
+                *byte = self
+                    .read_byte()
+                    .expect("buffer contains enough data for us");
+            }
+
+            Ok(())
+        })
+    }
     pub fn read_blocking(&self, buffer: &mut [u8]) {
         for byte in buffer {
             *byte = self.read_byte_blocking();

@@ -77,6 +77,17 @@ impl<T: Default, const N: usize> RingBuffer<T, N> {
         })
     }
 
+    /// returns amount of elements currently stored in
+    /// the ring buffer
+    pub fn size(&self) -> usize {
+        let (back, front) = without_interrupts(|| (self.back.index, self.front.index));
+        if back > front {
+            return back - front;
+        }
+
+        (back - front) + N
+    }
+
     pub fn pop_front(&mut self) -> Option<T> {
         without_interrupts(|| {
             if self.is_empty() {
