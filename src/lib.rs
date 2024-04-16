@@ -2,10 +2,10 @@
 
 use point::Point;
 
-mod point;
-mod request;
-mod response;
-mod byte_serializable;
+pub mod point;
+pub mod request;
+pub mod response;
+pub mod byte_serializable;
 
 pub const PROTOCOL_SIGNATURE: u64 = 0x15_8d_c5_8c_30_4f_00_7b;
 pub const POINT_AMOUNT: usize = 256;
