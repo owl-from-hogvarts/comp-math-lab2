@@ -2,9 +2,8 @@ use protocol::point::Point;
 
 use crate::equations::MethodError;
 
-use super::{NonLinearEquation, Solver, SolverInput};
-
-const MAX_ITERATIONS: usize = 1000;
+use super::Abs;
+use super::{NonLinearEquation, Solver, SolverInput, MAX_ITERATIONS};
 
 pub struct ChordSolver;
 
@@ -53,15 +52,5 @@ impl Solver for ChordSolver {
         }
 
         return Err(MethodError::Diverges);
-    }
-}
-
-trait Abs<T> {
-    fn abs(self) -> T;
-}
-
-impl Abs<f64> for f64 {
-    fn abs(self) -> f64 {
-        unsafe { avr_libc::fabs(self) }
     }
 }
