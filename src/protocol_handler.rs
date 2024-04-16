@@ -1,16 +1,22 @@
 use core::mem::size_of;
+use protocol::byte_serializable::ByteSerializable;
+use protocol::point::Point;
+use protocol::request::ComputeRootPayload;
+use protocol::request::RequestPackage;
+use protocol::response::ComputeRootResponse;
+use protocol::response::InitialApproximationsResponse;
+use protocol::PACKAGE_SIZE;
 
-use protocol::{ByteSerializable, RequestPackage, PACKAGE_SIZE, POINT_AMOUNT};
-use protocol::{ComputeRootPayload, Point};
+use protocol::POINT_AMOUNT;
 use ruduino::{cores::current::USART0, modules::HardwareUsart};
 
+use crate::blink;
 use crate::usart::Usart;
+use crate::usart::UsartError;
 
 type PointsHandler<'a> = &'a mut dyn FnMut(usize) -> Point;
-type InitialApproximationHandler<'b> =
-    &'b mut dyn FnMut() -> protocol::InitialApproximationsResponse;
-type ComputeRootHandler<'c> =
-    &'c mut dyn FnMut(ComputeRootPayload) -> protocol::ComputeRootResponse;
+type InitialApproximationHandler<'b> = &'b mut dyn FnMut() -> InitialApproximationsResponse;
+type ComputeRootHandler<'c> = &'c mut dyn FnMut(ComputeRootPayload) -> ComputeRootResponse;
 
 pub struct Connection<'aa, 'a, 'b, 'c, T: HardwareUsart> {
     channel: &'aa Usart<T>,
@@ -20,14 +26,20 @@ pub struct Connection<'aa, 'a, 'b, 'c, T: HardwareUsart> {
 }
 
 impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
+    // repeatedly send protocol signature
+    // when correct protocol singature is echoed back
+    // await for request
     pub fn new(channel: &'aa Usart<USART0>) -> Connection<'aa, 'a, 'b, 'c, USART0> {
         loop {
             channel.write_blocking(&protocol::PROTOCOL_SIGNATURE.to_le_bytes());
 
             let mut received = [0_u8; size_of::<u64>()];
-            channel.read_blocking(&mut received);
+            if let Err(UsartError::Blocked) = channel.read(&mut received) {
+                continue;
+            }
 
             let received = u64::from_le_bytes(received);
+            // blink(5, 100);
             if received == protocol::PROTOCOL_SIGNATURE {
                 break;
             }
