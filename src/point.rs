@@ -1,3 +1,5 @@
+use core::ops::{Add, Mul, Neg, Sub};
+
 use crate::{TNumber, T_NUMBER_SIZE_BYTES};
 use crate::byte_serializable::{read_field, ByteSerializable};
 
@@ -15,6 +17,62 @@ impl Point {
         Self { x: 0., y: 0. }
     }
 }
+
+impl Neg for Point {
+  type Output = Point;
+
+  fn neg(self) -> Self::Output {
+      Point {
+          x: -self.x,
+          y: -self.y,
+      }
+  }
+}
+
+impl Mul<f64> for Point {
+  type Output = Point;
+
+  fn mul(self, rhs: f64) -> Self::Output {
+      Point {
+          x: rhs * self.x,
+          y: rhs * self.y,
+      }
+  }
+}
+
+impl Add for Point {
+  type Output = Point;
+
+  fn add(self, rhs: Self) -> Self::Output {
+      Point {
+          x: self.x + rhs.x,
+          y: self.y + rhs.y,
+      }
+  }
+}
+
+impl Sub for Point {
+  type Output = Point;
+
+  fn sub(self, rhs: Self) -> Self::Output {
+      Point {
+          x: self.x - rhs.x,
+          y: self.y - rhs.y,
+      }
+  }
+}
+
+impl Mul<Point> for f64 {
+  type Output = Point;
+
+  fn mul(self, rhs: Point) -> Self::Output {
+      Point {
+          x: self * rhs.x,
+          y: self * rhs.y,
+      }
+  }
+}
+
 
 impl ByteSerializable<{ Self::POINT_SIZE_BYTES }> for Point {
     fn to_bytes(&self) -> [u8; Self::POINT_SIZE_BYTES] {
