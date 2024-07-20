@@ -7,7 +7,7 @@ use super::{NonLinearEquation, Solver, SolverInput, MAX_ITERATIONS};
 
 pub struct ChordSolver;
 
-impl Solver for ChordSolver {
+impl Solver<NonLinearEquation> for ChordSolver {
     fn solve(
         &self,
         equation: &NonLinearEquation,

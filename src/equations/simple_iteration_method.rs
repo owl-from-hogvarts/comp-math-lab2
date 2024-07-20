@@ -11,7 +11,7 @@ pub struct SimpleIterationSolver;
 
 type Type = MethodError;
 
-impl Solver for SimpleIterationSolver {
+impl Solver<NonLinearEquation> for SimpleIterationSolver {
     fn solve(&self, equation: &NonLinearEquation, parameters: &SolverInput) -> Result<Point, Type> {
         let &SolverInput {
             start,

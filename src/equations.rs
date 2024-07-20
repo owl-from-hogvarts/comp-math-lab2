@@ -1,6 +1,6 @@
 use protocol::{point::Point, POINT_AMOUNT};
 
-const MAX_ITERATIONS: usize = 1000;
+pub(crate) const MAX_ITERATIONS: usize = 1000;
 
 pub const LEFT_BORDER: f64 = -10.;
 pub const RIGHT_BORDER: f64 = 10.;
@@ -16,14 +16,14 @@ mod secant_method;
 mod simple_iteration_method;
 
 #[derive(Debug)]
-enum MethodError {
+pub(crate) enum MethodError {
     Diverges,
 }
 
-struct SolverInput {
-    start: f64,
-    end: f64,
-    epsilon: f64,
+pub(crate) struct SolverInput {
+    pub start: f64,
+    pub end: f64,
+    pub epsilon: f64,
 }
 
 pub struct NonLinearEquation {
@@ -31,17 +31,11 @@ pub struct NonLinearEquation {
     pub first_derevative: fn(x: f64) -> f64,
 }
 
-trait Solver {
-    fn solve(
-        &self,
-        equation: &NonLinearEquation,
-        parameters: &SolverInput,
-    ) -> Result<Point, MethodError>;
+pub(crate) trait Solver<T> {
+    fn solve(&self, equation: &T, parameters: &SolverInput) -> Result<Point, MethodError>;
 }
 
-impl NonLinearEquation {}
-
-trait Abs {
+pub trait Abs {
     fn abs(self) -> Self;
 }
 

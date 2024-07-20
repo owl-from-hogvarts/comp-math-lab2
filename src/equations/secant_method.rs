@@ -5,7 +5,7 @@ use super::{MethodError, NonLinearEquation, Solver, SolverInput, MAX_ITERATIONS}
 
 pub struct SecantSolver;
 
-impl Solver for SecantSolver {
+impl Solver<NonLinearEquation> for SecantSolver {
     fn solve(
         &self,
         equation: &NonLinearEquation,
