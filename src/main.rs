@@ -23,6 +23,7 @@ mod equations;
 mod lazy;
 mod protocol_handler;
 mod ring_buffer;
+mod system_of_equations;
 mod usart;
 
 use crate::equations::Trigonometry;
