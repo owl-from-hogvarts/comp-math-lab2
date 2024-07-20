@@ -1,22 +1,51 @@
-use crate::{byte_serializable::{read_field, ByteSerializable}, point::Point, TNumber, LONG_PACKAGE_SIZE, PACKAGE_SIZE, POINT_AMOUNT, T_NUMBER_SIZE_BYTES};
+use crate::{
+    byte_serializable::{read_field, ByteSerializable},
+    point::Point,
+    TNumber, LONG_PACKAGE_SIZE, PACKAGE_SIZE, POINT_AMOUNT, T_NUMBER_SIZE_BYTES,
+};
 
-pub struct ResponsePackage;
+#[derive(Debug, Clone, Copy)]
+pub enum ResponsePackage {
+    InitialApproximations(InitialApproximationsResponse),
+    ComputeRoot(ComputeRootResponse),
+    FunctionPoints(FunctionPointsResponse),
+}
+
+impl From<InitialApproximationsResponse> for ResponsePackage {
+    fn from(value: InitialApproximationsResponse) -> Self {
+        Self::InitialApproximations(value)
+    }
+}
+
+impl From<ComputeRootResponse> for ResponsePackage {
+    fn from(value: ComputeRootResponse) -> Self {
+        Self::ComputeRoot(value)
+    }
+}
+
+impl From<FunctionPointsResponse> for ResponsePackage {
+    fn from(value: FunctionPointsResponse) -> Self {
+        Self::FunctionPoints(value)
+    }
+}
 
 impl ResponsePackage {
     const PAYLOAD_OFFSET: usize = 0;
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct InitialApproximationsResponse {
-    left: TNumber,
-    right: TNumber,
+    pub left: TNumber,
+    pub right: TNumber,
 }
 impl InitialApproximationsResponse {
     const LEFT_BYTES_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET;
     const RIGHT_BYTES_OFFSET: usize = Self::LEFT_BYTES_OFFSET + T_NUMBER_SIZE_BYTES;
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct ComputeRootResponse {
-    root: Point,
+    pub root: Point,
 }
 
 impl ComputeRootResponse {
@@ -35,8 +64,8 @@ impl ByteSerializable<PACKAGE_SIZE> for InitialApproximationsResponse {
         package
     }
 
-    fn from_bytes(raw_bytes: [u8; PACKAGE_SIZE]) -> Self {
-        let left_bytes: [u8; T_NUMBER_SIZE_BYTES] = read_field(&raw_bytes, Self::LEFT_BYTES_OFFSET);
+    fn from_bytes(raw_bytes: &[u8; PACKAGE_SIZE]) -> Self {
+        let left_bytes: [u8; T_NUMBER_SIZE_BYTES] = read_field(raw_bytes, Self::LEFT_BYTES_OFFSET);
         let left = f64::from_le_bytes(left_bytes);
 
         let right_bytes: [u8; 8] = raw_bytes
@@ -58,23 +87,24 @@ impl ByteSerializable<PACKAGE_SIZE> for ComputeRootResponse {
         package
     }
 
-    fn from_bytes(raw_bytes: [u8; PACKAGE_SIZE]) -> Self {
-        let point_bytes: [u8; Point::POINT_SIZE_BYTES] = read_field(&raw_bytes, Self::ROOT_OFFSET);
+    fn from_bytes(raw_bytes: &[u8; PACKAGE_SIZE]) -> Self {
+        let point_bytes: [u8; Point::POINT_SIZE_BYTES] = read_field(raw_bytes, Self::ROOT_OFFSET);
         ComputeRootResponse {
-            root: Point::from_bytes(point_bytes),
+            root: Point::from_bytes(&point_bytes),
         }
     }
 }
 
 /// struct is too big to fit into arduino's memory
 /// points should be send one after another, sorted by `x` field
+#[derive(Debug, Clone, Copy)]
 pub struct FunctionPointsResponse(pub [Point; POINT_AMOUNT]);
 
-impl From<[u8; LONG_PACKAGE_SIZE]> for FunctionPointsResponse {
-    fn from(value: [u8; LONG_PACKAGE_SIZE]) -> Self {
+impl From<&[u8; LONG_PACKAGE_SIZE]> for FunctionPointsResponse {
+    fn from(value: &[u8; LONG_PACKAGE_SIZE]) -> Self {
         let mut points: [Point; POINT_AMOUNT] = [Point::zero(); POINT_AMOUNT];
         for (index, point) in points.iter_mut().enumerate() {
-            *point = Point::from_bytes(read_field(&value, index * Point::POINT_SIZE_BYTES))
+            *point = Point::from_bytes(&read_field(value, index * Point::POINT_SIZE_BYTES))
         }
 
         FunctionPointsResponse(points)
