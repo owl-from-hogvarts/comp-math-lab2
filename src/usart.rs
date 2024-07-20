@@ -15,7 +15,7 @@ use crate::lazy::Lazy;
 use crate::ring_buffer;
 use crate::ring_buffer::RingBuffer;
 
-const MAX_FRAME_SIZE: usize = 50;
+const MAX_FRAME_SIZE: usize = 64;
 
 enum State {
     Idle,
@@ -83,15 +83,15 @@ impl Usart<USART0> {
             // operation register
             // <USART0 as HardwareUsart>::ControlRegisterA::set(UCSR0A::U2X0);
             <USART0 as HardwareUsart>::ControlRegisterA::write(0);
-            // enable usart
-            <USART0 as HardwareUsart>::ControlRegisterB::set(
-                UCSR0B::TXEN0 | UCSR0B::UDRIE0 | UCSR0B::RXCIE0 | UCSR0B::RXEN0,
-            );
             // configuration register
             let config = <OperationMode as Into<u8>>::into(OperationMode::Async)
                 | (1 << avr_libc::UCSZ01)
                 | (1 << avr_libc::UCSZ00);
             <USART0 as HardwareUsart>::ControlRegisterC::write(config);
+            // enable usart
+            <USART0 as HardwareUsart>::ControlRegisterB::set(
+                UCSR0B::TXEN0 | UCSR0B::UDRIE0 | UCSR0B::RXCIE0 | UCSR0B::RXEN0,
+            );
             Usart {
                 inner: UnsafeCell::new(UsartInner {
                     read_buffer: RingBuffer::new(),
