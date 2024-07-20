@@ -12,6 +12,8 @@ use core::panic::PanicInfo;
 
 use equations::{NonLinearEquation, Pow, LEFT_BORDER, POINT_INTERVAL_LENGTH};
 use protocol::point::Point;
+use protocol::request::payloads::FunctionPointsPayload;
+use protocol::response::InitialApproximationsResponse;
 use protocol_handler::Connection;
 use ring_buffer::RingBuffer;
 use ruduino::cores::current::port;
@@ -51,12 +53,18 @@ pub extern "C" fn main() {
     ];
 
     let mut connection = Connection::new(&*usart::USART);
-    let mut handler = |index| {
-        let equation = &equations[0];
+    let mut points_handler = |config: &FunctionPointsPayload, index| {
+        let equation = &equations[config.equation_number as usize];
         let x = LEFT_BORDER + POINT_INTERVAL_LENGTH * index as f64;
         Point::new(x, (equation.function)(x))
     };
-    connection.set_points_handler(&mut handler);
+
+    let mut initial_approximations_handler = || InitialApproximationsResponse {
+        left: 1.,
+        right: 5.,
+    };
+    connection.set_points_handler(&mut points_handler);
+    connection.set_initial_approximation(&mut initial_approximations_handler);
 
     loop {
         connection.handle_request();

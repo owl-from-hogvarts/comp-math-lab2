@@ -1,7 +1,8 @@
 use core::mem::size_of;
 use protocol::byte_serializable::ByteSerializable;
 use protocol::point::Point;
-use protocol::request::ComputeRootPayload;
+use protocol::request::payloads::ComputeRootPayload;
+use protocol::request::payloads::FunctionPointsPayload;
 use protocol::request::RequestPackage;
 use protocol::response::ComputeRootResponse;
 use protocol::response::InitialApproximationsResponse;
@@ -14,7 +15,7 @@ use crate::blink;
 use crate::usart::Usart;
 use crate::usart::UsartError;
 
-type PointsHandler<'a> = &'a mut dyn FnMut(usize) -> Point;
+type PointsHandler<'a> = &'a mut dyn FnMut(&FunctionPointsPayload, usize) -> Point;
 type InitialApproximationHandler<'b> = &'b mut dyn FnMut() -> InitialApproximationsResponse;
 type ComputeRootHandler<'c> = &'c mut dyn FnMut(ComputeRootPayload) -> ComputeRootResponse;
 
@@ -26,18 +27,24 @@ pub struct Connection<'aa, 'a, 'b, 'c, T: HardwareUsart> {
 }
 
 impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
-    // repeatedly send protocol signature
+    // send protocol signature
     // when correct protocol singature is echoed back
-    // await for request
+    // await for requests
     pub fn new(channel: &'aa Usart<USART0>) -> Connection<'aa, 'a, 'b, 'c, USART0> {
+        // for some reason when arduino is first plugged in
+        // it sends 0xfe, 0xfd or 0xff byte before the protocol signature.
+        // Noticable, that if only two bytes are sent at a time, no additional bytes
+        // are sent.
+        // Send signature twice. This mitigates effect of up to 8 unexpected bytes.
+        channel.write_blocking(&protocol::PROTOCOL_SIGNATURE.to_le_bytes());
+        channel.write_blocking(&protocol::PROTOCOL_SIGNATURE.to_le_bytes());
+
+        let mut received = [0_u8; size_of::<u64>()];
         loop {
-            channel.write_blocking(&protocol::PROTOCOL_SIGNATURE.to_le_bytes());
+            channel.read_blocking(&mut received);
 
-            let mut received = [0_u8; size_of::<u64>()];
-            if let Err(UsartError::Blocked) = channel.read(&mut received) {
-                continue;
-            }
-
+            // TODO: replace with `is_signature_valid` from
+            // protocol's crate
             let received = u64::from_le_bytes(received);
             // blink(5, 100);
             if received == protocol::PROTOCOL_SIGNATURE {
@@ -57,12 +64,12 @@ impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
         let mut incoming_data = [0_u8; PACKAGE_SIZE];
         self.channel.read_blocking(&mut incoming_data);
 
-        let request = RequestPackage::from_bytes(incoming_data);
+        let request = RequestPackage::from_bytes(&incoming_data);
         match request {
-            RequestPackage::FunctionPoints => {
+            RequestPackage::FunctionPoints { payload } => {
                 if let Some(handler) = &mut self.function_points_handler {
                     for index in 0..POINT_AMOUNT {
-                        let point = handler(index);
+                        let point = handler(&payload, index);
                         let bytes = point.to_bytes();
                         self.channel.write_blocking(&bytes);
                     }
