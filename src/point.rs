@@ -1,78 +1,91 @@
 use core::ops::{Add, Mul, Neg, Sub};
 
-use crate::{TNumber, T_NUMBER_SIZE_BYTES};
 use crate::byte_serializable::{read_field, ByteSerializable};
+use crate::{TNumber, T_NUMBER_SIZE_BYTES};
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Point {
-    x: TNumber,
-    y: TNumber,
+    pub x: TNumber,
+    pub y: TNumber,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PointCoordinate {
+    X,
+    Y,
 }
 
 impl Point {
     pub fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
+
     pub fn zero() -> Self {
         Self { x: 0., y: 0. }
+    }
+
+    pub fn get_coordinate(&self, coordinate: PointCoordinate) -> TNumber {
+        match coordinate {
+            PointCoordinate::X => self.x,
+            PointCoordinate::Y => self.y,
+        }
     }
 }
 
 impl Neg for Point {
-  type Output = Point;
+    type Output = Point;
 
-  fn neg(self) -> Self::Output {
-      Point {
-          x: -self.x,
-          y: -self.y,
-      }
-  }
+    fn neg(self) -> Self::Output {
+        Point {
+            x: -self.x,
+            y: -self.y,
+        }
+    }
 }
 
 impl Mul<f64> for Point {
-  type Output = Point;
+    type Output = Point;
 
-  fn mul(self, rhs: f64) -> Self::Output {
-      Point {
-          x: rhs * self.x,
-          y: rhs * self.y,
-      }
-  }
+    fn mul(self, rhs: f64) -> Self::Output {
+        Point {
+            x: rhs * self.x,
+            y: rhs * self.y,
+        }
+    }
 }
 
 impl Add for Point {
-  type Output = Point;
+    type Output = Point;
 
-  fn add(self, rhs: Self) -> Self::Output {
-      Point {
-          x: self.x + rhs.x,
-          y: self.y + rhs.y,
-      }
-  }
+    fn add(self, rhs: Self) -> Self::Output {
+        Point {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
 }
 
 impl Sub for Point {
-  type Output = Point;
+    type Output = Point;
 
-  fn sub(self, rhs: Self) -> Self::Output {
-      Point {
-          x: self.x - rhs.x,
-          y: self.y - rhs.y,
-      }
-  }
+    fn sub(self, rhs: Self) -> Self::Output {
+        Point {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
 }
 
 impl Mul<Point> for f64 {
-  type Output = Point;
+    type Output = Point;
 
-  fn mul(self, rhs: Point) -> Self::Output {
-      Point {
-          x: self * rhs.x,
-          y: self * rhs.y,
-      }
-  }
+    fn mul(self, rhs: Point) -> Self::Output {
+        Point {
+            x: self * rhs.x,
+            y: self * rhs.y,
+        }
+    }
 }
-
 
 impl ByteSerializable<{ Self::POINT_SIZE_BYTES }> for Point {
     fn to_bytes(&self) -> [u8; Self::POINT_SIZE_BYTES] {
@@ -83,10 +96,10 @@ impl ByteSerializable<{ Self::POINT_SIZE_BYTES }> for Point {
         bytes
     }
 
-    fn from_bytes(raw_bytes: [u8; Self::POINT_SIZE_BYTES]) -> Self {
+    fn from_bytes(raw_bytes: &[u8; Self::POINT_SIZE_BYTES]) -> Self {
         Self {
-            x: f64::from_be_bytes(read_field(&raw_bytes, 0)),
-            y: f64::from_le_bytes(read_field(&raw_bytes, T_NUMBER_SIZE_BYTES)),
+            x: f64::from_le_bytes(read_field(raw_bytes, 0)),
+            y: f64::from_le_bytes(read_field(raw_bytes, T_NUMBER_SIZE_BYTES)),
         }
     }
 }
