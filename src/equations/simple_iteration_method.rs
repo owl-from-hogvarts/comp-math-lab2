@@ -52,7 +52,7 @@ fn calculate_lambda(
 }
 
 fn is_precise(x: f64, next_x: f64, q: f64, epsilon: f64) -> bool {
-    let difference = (x - next_x).abs();
+    let difference = Abs::abs(x - next_x);
     if q <= 0.5 {
         return difference < epsilon;
     }

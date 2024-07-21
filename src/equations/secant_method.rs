@@ -22,8 +22,8 @@ impl Solver<NonLinearEquation> for SecantSolver {
             x_previous = x;
             x = x_next;
 
-            if (x - x_previous).abs() <= parameters.epsilon
-                || ((equation.function)(x)).abs() <= parameters.epsilon
+            if Abs::abs(x - x_previous) <= parameters.epsilon
+                || Abs::abs((equation.function)(x)) <= parameters.epsilon
             {
                 return Ok(Point::new(x, (equation.function)(x)));
             }

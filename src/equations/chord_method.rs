@@ -30,7 +30,7 @@ impl Solver<NonLinearEquation> for ChordSolver {
 
             let y = (equation.function)(x);
             // println!("y: {y:.5}");
-            if y.abs() <= epsilon {
+            if Abs::abs(y) <= epsilon {
                 return Ok(Point::new(x, y));
             }
 
