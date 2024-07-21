@@ -5,19 +5,21 @@
 #![no_std]
 #![no_main]
 
-// extern crate avr_libc;
-
 use core::arch::asm;
 use core::panic::PanicInfo;
 
-use equations::{NonLinearEquation, Pow, LEFT_BORDER, POINT_INTERVAL_LENGTH};
-use protocol::point::Point;
+use equations::{
+    Equations, Logarithm, NonLinearEquation, Pow, Trigonometry, LEFT_BORDER, POINT_AMOUNT,
+    POINT_INTERVAL_LENGTH,
+};
+use protocol::point::{Point, PointCoordinate};
 use protocol::request::payloads::FunctionPointsPayload;
 use protocol::response::InitialApproximationsResponse;
 use protocol_handler::Connection;
 use ring_buffer::RingBuffer;
 use ruduino::cores::current::port;
 use ruduino::Pin;
+use system_of_equations::{EquationWithPhi, SystemOfEquations};
 
 mod equations;
 mod lazy;
@@ -26,39 +28,57 @@ mod ring_buffer;
 mod system_of_equations;
 mod usart;
 
-use crate::equations::Trigonometry;
+const SINGLE: [NonLinearEquation; 2] = [
+    NonLinearEquation {
+        function: |x: f64| x.pow(2_f64) + x + Trigonometry::sin(x),
+        first_derevative: |x: f64| 2_f64 * x + 1_f64 + Trigonometry::cos(x),
+    },
+    NonLinearEquation {
+        function: |x: f64| x.sin(),
+        first_derevative: |x: f64| (3. / 10.) * x.pow(x) + (3. * x.pow(x) * Logarithm::ln(x)) / 10.,
+    },
+    // NonLinearEquation {
+    //     function: todo!(),
+    //     first_derevative: todo!(),
+    // },
+];
 
-pub struct Pixel {
-    red: u8,
-    green: u8,
-    blue: u8,
-}
+const SYSTEMS: [SystemOfEquations; 1] = [SystemOfEquations {
+    first: EquationWithPhi {
+        function: |x| (1. - Trigonometry::sin(x) / 2., PointCoordinate::Y),
+        phi: |(_x, y)| 0.7 - Trigonometry::cos(y - 1.),
+    },
+    second: EquationWithPhi {
+        function: |y| (0.7 - Trigonometry::cos(y - 1.), PointCoordinate::X),
+        phi: |(x, _y)| 1. - Trigonometry::sin(x) / 2.,
+    },
+}];
 
 #[no_mangle]
 pub extern "C" fn main() {
     unsafe { asm!("SEI") }
 
-    let equations: [NonLinearEquation; 1] = [
-        NonLinearEquation {
-            function: |x: f64| x.pow(2_f64) + x + x.sin(),
-            first_derevative: |x: f64| 2_f64 * x + 1_f64 + x.cos(),
+    let mut connection = Connection::new(
+        &*usart::USART,
+        Equations {
+            single: &SINGLE,
+            systems: &SYSTEMS,
         },
-        // NonLinearEquation {
-        //     function: todo!(),
-        //     first_derevative: todo!(),
-        // },
-        // NonLinearEquation {
-        //     function: todo!(),
-        //     first_derevative: todo!(),
-        // },
-    ];
+    );
+    let mut points_handler =
+        |equation: &mut dyn FnMut(f64) -> (f64, PointCoordinate),
+         write_back: &mut dyn FnMut(Point) -> ()| {
+            for index in 0..POINT_AMOUNT {
+                let variable = LEFT_BORDER + POINT_INTERVAL_LENGTH * index as f64;
+                let (dependent, coord) = (equation)(variable);
+                let point = match coord {
+                    PointCoordinate::X => Point::new(dependent, variable),
+                    PointCoordinate::Y => Point::new(variable, dependent),
+                };
 
-    let mut connection = Connection::new(&*usart::USART);
-    let mut points_handler = |config: &FunctionPointsPayload, index| {
-        let equation = &equations[config.equation_number as usize];
-        let x = LEFT_BORDER + POINT_INTERVAL_LENGTH * index as f64;
-        Point::new(x, (equation.function)(x))
-    };
+                write_back(point);
+            }
+        };
 
     let mut initial_approximations_handler = || InitialApproximationsResponse {
         left: 1.,

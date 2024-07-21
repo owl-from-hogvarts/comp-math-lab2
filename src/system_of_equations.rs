@@ -1,8 +1,26 @@
-use protocol::point::Point;
+use protocol::point::{Point, PointCoordinate};
 
-use crate::equations::{Abs, MethodError, NonLinearEquation, Solver, SolverInput, MAX_ITERATIONS};
+use crate::equations::{Abs, MethodError, Solver, SolverInput, MAX_ITERATIONS};
 
-pub type SystemOfEquations = [NonLinearEquation; 2];
+#[derive(Clone)]
+pub struct EquationWithPhi {
+    /// To generate points for function graph.
+    /// Use point coordinate to distinguish between
+    /// *f(x) = y* and *f(y) = x*
+    /// `PointCoordinate` designates, which coordinate is dependent.
+    ///
+    /// Example:
+    /// `(3., PointCoordinate::x)` is returned for f(y) = x
+    pub function: fn(f64) -> (f64, PointCoordinate),
+    /// Calculate next step in simple iteration algorithm
+    pub phi: fn((f64, f64)) -> f64,
+}
+
+#[derive(Clone)]
+pub struct SystemOfEquations {
+    pub first: EquationWithPhi,
+    pub second: EquationWithPhi,
+}
 
 pub struct SimpleIteratorSolverForSystems;
 
@@ -13,14 +31,14 @@ impl Solver<SystemOfEquations> for SimpleIteratorSolverForSystems {
         parameters: &SolverInput,
     ) -> Result<Point, MethodError> {
         // TODO: divergence check
-        let mut x = [parameters.start, parameters.end];
+        let mut x = (parameters.start, parameters.end);
         for _ in 0..MAX_ITERATIONS {
-            let new_x = [(system[0].function)(x[0]), (system[1].function)(x[1])];
+            let new_x = ((system.first.phi)(x), (system.second.phi)(x));
 
-            if f64::max((new_x[0] - x[0]).abs(), (new_x[1] - x[1]).abs()) < parameters.epsilon {
+            if f64::max(Abs::abs((new_x.0 - x.0)), Abs::abs((new_x.1 - x.1))) < parameters.epsilon {
                 return Ok(Point {
-                    x: new_x[0],
-                    y: new_x[1],
+                    x: new_x.0,
+                    y: new_x.1,
                 });
             }
 

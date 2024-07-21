@@ -1,21 +1,24 @@
 use core::mem::size_of;
 use protocol::byte_serializable::ByteSerializable;
 use protocol::point::Point;
+use protocol::point::PointCoordinate;
 use protocol::request::payloads::ComputeRootPayload;
-use protocol::request::payloads::FunctionPointsPayload;
 use protocol::request::RequestPackage;
 use protocol::response::ComputeRootResponse;
 use protocol::response::InitialApproximationsResponse;
 use protocol::PACKAGE_SIZE;
 
-use protocol::POINT_AMOUNT;
 use ruduino::{cores::current::USART0, modules::HardwareUsart};
 
 use crate::blink;
+use crate::equations::Equations;
+use crate::equations::NonLinearEquation;
 use crate::usart::Usart;
-use crate::usart::UsartError;
 
-type PointsHandler<'a> = &'a mut dyn FnMut(&FunctionPointsPayload, usize) -> Point;
+type PointsHandler<'a> = &'a mut dyn FnMut(
+    &mut dyn FnMut(f64) -> (f64, PointCoordinate),
+    &mut dyn FnMut(Point) -> (),
+) -> ();
 type InitialApproximationHandler<'b> = &'b mut dyn FnMut() -> InitialApproximationsResponse;
 type ComputeRootHandler<'c> = &'c mut dyn FnMut(ComputeRootPayload) -> ComputeRootResponse;
 
@@ -24,13 +27,17 @@ pub struct Connection<'aa, 'a, 'b, 'c, T: HardwareUsart> {
     function_points_handler: Option<PointsHandler<'a>>,
     function_initial_approximation: Option<InitialApproximationHandler<'b>>,
     function_compute_root: Option<ComputeRootHandler<'c>>,
+    context: Equations,
 }
 
 impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
     // send protocol signature
     // when correct protocol singature is echoed back
     // await for requests
-    pub fn new(channel: &'aa Usart<USART0>) -> Connection<'aa, 'a, 'b, 'c, USART0> {
+    pub fn new(
+        channel: &'aa Usart<USART0>,
+        context: Equations,
+    ) -> Connection<'aa, 'a, 'b, 'c, USART0> {
         // for some reason when arduino is first plugged in
         // it sends 0xfe, 0xfd or 0xff byte before the protocol signature.
         // Noticable, that if only two bytes are sent at a time, no additional bytes
@@ -57,6 +64,7 @@ impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
             function_points_handler: None,
             function_initial_approximation: None,
             function_compute_root: None,
+            context,
         }
     }
 
@@ -68,11 +76,22 @@ impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
         match request {
             RequestPackage::FunctionPoints { payload } => {
                 if let Some(handler) = &mut self.function_points_handler {
-                    for index in 0..POINT_AMOUNT {
-                        let point = handler(&payload, index);
-                        let bytes = point.to_bytes();
-                        self.channel.write_blocking(&bytes);
-                    }
+                    let mut writer = |point: Point| self.channel.write_blocking(&point.to_bytes());
+                    match payload.mode {
+                        protocol::request::EquationModeRaw::SingleEquation => {
+                            let equation = &self.context.single[payload.equation_number as usize];
+                            handler(
+                                &mut |x| ((equation.function)(x), PointCoordinate::Y),
+                                &mut writer,
+                            );
+                        }
+                        protocol::request::EquationModeRaw::SystemOfEquations => {
+                            let mut system =
+                                self.context.systems[payload.equation_number as usize].clone();
+                            handler(&mut system.first.function, &mut writer);
+                            handler(&mut system.second.function, &mut writer);
+                        }
+                    };
                 }
             }
             RequestPackage::InitialApproximations => {
