@@ -1,3 +1,5 @@
+use core::intrinsics;
+
 use protocol::point::Point;
 
 use crate::system_of_equations::SystemOfEquations;
@@ -56,6 +58,8 @@ pub trait Pow {
 
 impl Pow for f64 {
     fn pow(self, power: f64) -> Self {
+        // migrate to intrinsics
+        // libc supports only f32
         unsafe { avr_libc::pow(self, power) }
     }
 }

@@ -34,7 +34,7 @@ const SINGLE: [NonLinearEquation; 2] = [
         first_derevative: |x: f64| 2_f64 * x + 1_f64 + Trigonometry::cos(x),
     },
     NonLinearEquation {
-        function: |x: f64| x.sin(),
+        function: |x: f64| Trigonometry::sin(x) as f64,
         first_derevative: |x: f64| (3. / 10.) * x.pow(x) + (3. * x.pow(x) * Logarithm::ln(x)) / 10.,
     },
     // NonLinearEquation {
