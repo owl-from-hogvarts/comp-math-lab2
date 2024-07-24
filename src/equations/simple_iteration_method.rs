@@ -20,9 +20,9 @@ impl Solver<NonLinearEquation> for SimpleIterationSolver {
         } = parameters;
         let lambda = calculate_lambda(equation, parameters);
         let phi = |x| x + lambda * (equation.function)(x);
-        let phi_derevative = |x| 1. + lambda * (equation.first_derevative)(x);
+        let phi_derivative = |x| 1. + lambda * (equation.first_derivative)(x);
 
-        let q = f64::max(phi_derevative(start), phi_derevative(end));
+        let q = f64::max(phi_derivative(start), phi_derivative(end));
         if q >= 1. {
             return Err(MethodError::Diverges);
         }
@@ -44,11 +44,11 @@ impl Solver<NonLinearEquation> for SimpleIterationSolver {
 
 fn calculate_lambda(
     NonLinearEquation {
-        first_derevative, ..
+        first_derivative, ..
     }: &NonLinearEquation,
     &SolverInput { start, end, .. }: &SolverInput,
 ) -> f64 {
-    1. / f64::max(first_derevative(start), first_derevative(end))
+    1. / f64::max(first_derivative(start), first_derivative(end))
 }
 
 fn is_precise(x: f64, next_x: f64, q: f64, epsilon: f64) -> bool {

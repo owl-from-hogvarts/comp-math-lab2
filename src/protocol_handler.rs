@@ -10,9 +10,7 @@ use protocol::PACKAGE_SIZE;
 
 use ruduino::{cores::current::USART0, modules::HardwareUsart};
 
-use crate::blink;
 use crate::equations::Equations;
-use crate::equations::NonLinearEquation;
 use crate::usart::Usart;
 
 type PointsHandler<'a> = &'a mut dyn FnMut(
