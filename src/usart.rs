@@ -1,15 +1,16 @@
 use core::arch::asm;
 use core::cell::UnsafeCell;
 
-use avr_libc::UMSEL00;
 use ruduino::cores::current::SREG;
 use ruduino::cores::current::UCSR0A;
 use ruduino::cores::current::UCSR0B;
+use ruduino::cores::current::UCSR0C;
 use ruduino::cores::current::USART0;
 use ruduino::modules::HardwareUsart;
 use ruduino::Register;
 
 use ruduino::interrupt::without_interrupts;
+use ruduino::RegisterBits;
 
 use crate::lazy::Lazy;
 use crate::ring_buffer;
@@ -46,16 +47,14 @@ enum OperationMode {
     MasterSPI,
 }
 
-impl From<OperationMode> for u8 {
+impl From<OperationMode> for RegisterBits<UCSR0C> {
     fn from(value: OperationMode) -> Self {
         // constants are defined in atmega328p reference
-        let bits = match value {
-            OperationMode::Async => 0,
-            OperationMode::Sync => 1,
-            OperationMode::MasterSPI => 3,
-        };
-
-        bits << UMSEL00
+        match value {
+            OperationMode::Async => RegisterBits::zero(),
+            OperationMode::Sync => UCSR0C::UMSEL00, // 1
+            OperationMode::MasterSPI => UCSR0C::UMSEL0, // 3
+        }
     }
 }
 
@@ -84,9 +83,8 @@ impl Usart<USART0> {
             // <USART0 as HardwareUsart>::ControlRegisterA::set(UCSR0A::U2X0);
             <USART0 as HardwareUsart>::ControlRegisterA::write(0);
             // configuration register
-            let config = <OperationMode as Into<u8>>::into(OperationMode::Async)
-                | (1 << avr_libc::UCSZ01)
-                | (1 << avr_libc::UCSZ00);
+            
+            let config = UCSR0C::UCSZ0 | OperationMode::Async.into();
             <USART0 as HardwareUsart>::ControlRegisterC::write(config);
             // enable usart
             <USART0 as HardwareUsart>::ControlRegisterB::set(
@@ -247,7 +245,7 @@ impl From<bool> for InterruptsStatus {
     }
 }
 
-#[inline(always)]
+#[inline]
 pub fn without_interrupts_blink<F, T>(f: F) -> T
 where
     F: FnOnce() -> T,
@@ -257,7 +255,7 @@ where
 }
 
 impl InterruptsStatus {
-    #[inline(always)]
+    #[inline]
     pub fn disable_safe() -> InterruptsStatus {
         let status: InterruptsStatus = SREG::is_set(SREG::I).into();
         unsafe { asm!("CLI") };
@@ -266,7 +264,7 @@ impl InterruptsStatus {
 }
 
 impl Drop for InterruptsStatus {
-    #[inline(always)]
+    #[inline]
     fn drop(&mut self) {
         if let InterruptsStatus::Enabled = self {
             unsafe { asm!("SEI") };

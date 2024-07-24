@@ -24,7 +24,7 @@ impl<const N: usize> PartialEq<RingIndex<N>> for RingIndex<N> {
 }
 
 impl<const N: usize> RingIndex<N> {
-    #[inline(always)]
+    #[inline]
     fn next(&mut self) {
         self.index = (self.index + 1) % N;
     }
