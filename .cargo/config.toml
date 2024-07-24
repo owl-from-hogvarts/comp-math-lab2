@@ -5,5 +5,7 @@ b = "build --release"
 target = "avr-unknown-gnu-atmega328"
 
 [unstable]
-build-std= ["core"]
+build-std= ["core", "panic_abort"]
 # build-std-features = ["compiler-builtins-mangled-names"]
+build-std-features=[ "panic_immediate_abort" ]
+
