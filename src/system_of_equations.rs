@@ -1,4 +1,7 @@
-use protocol::point::{Point, PointCoordinate};
+use protocol::{
+    point::{Point, PointCoordinate},
+    TNumber,
+};
 
 use crate::equations::{Abs, MethodError, Solver, SolverInput, MAX_ITERATIONS};
 
@@ -11,9 +14,9 @@ pub struct EquationWithPhi {
     ///
     /// Example:
     /// `(3., PointCoordinate::x)` is returned for f(y) = x
-    pub function: fn(f64) -> (f64, PointCoordinate),
+    pub function: fn(TNumber) -> (TNumber, PointCoordinate),
     /// Calculate next step in simple iteration algorithm
-    pub phi: fn((f64, f64)) -> f64,
+    pub phi: fn((TNumber, TNumber)) -> TNumber,
 }
 
 #[derive(Clone)]
@@ -35,7 +38,7 @@ impl Solver<SystemOfEquations> for SimpleIteratorSolverForSystems {
         for _ in 0..MAX_ITERATIONS {
             let new_x = ((system.first.phi)(x), (system.second.phi)(x));
 
-            if f64::max(Abs::abs((new_x.0 - x.0)), Abs::abs((new_x.1 - x.1))) < parameters.epsilon {
+            if TNumber::max(Abs::abs(new_x.0 - x.0), Abs::abs(new_x.1 - x.1)) < parameters.epsilon {
                 return Ok(Point {
                     x: new_x.0,
                     y: new_x.1,

@@ -1,9 +1,16 @@
-#![feature(panic_info_message)]
 #![allow(dead_code)]
 #![feature(asm_experimental_arch)]
 #![feature(abi_avr_interrupt)]
+// avr is tier 3 support.
+// we need math intrinsics, because avr-libc supports only f32 computations
+// and we can't ship two copies of `compiler_builtin`s -- linker fails to
+// resolve them
+#![allow(internal_features)]
+#![feature(core_intrinsics)]
 #![no_std]
 #![no_main]
+
+extern crate avr_libc;
 
 use core::arch::asm;
 use core::panic::PanicInfo;
@@ -13,10 +20,9 @@ use equations::{
     POINT_INTERVAL_LENGTH,
 };
 use protocol::point::{Point, PointCoordinate};
-use protocol::request::payloads::FunctionPointsPayload;
 use protocol::response::InitialApproximationsResponse;
+use protocol::TNumber;
 use protocol_handler::Connection;
-use ring_buffer::RingBuffer;
 use ruduino::cores::current::port;
 use ruduino::Pin;
 use system_of_equations::{EquationWithPhi, SystemOfEquations};
@@ -30,20 +36,22 @@ mod usart;
 
 const SINGLE: [NonLinearEquation; 2] = [
     NonLinearEquation {
-        function: |x: f64| x.pow(2_f64) + x + Trigonometry::sin(x),
-        first_derevative: |x: f64| 2_f64 * x + 1_f64 + Trigonometry::cos(x),
+        function: |x: TNumber| x.pow(2_f64) + x + Trigonometry::sin(x),
+        first_derivative: |x: TNumber| 2_f64 * x + 1_f64 + Trigonometry::cos(x),
     },
     NonLinearEquation {
-        function: |x: f64| Trigonometry::sin(x) as f64,
-        first_derevative: |x: f64| (3. / 10.) * x.pow(x) + (3. * x.pow(x) * Logarithm::ln(x)) / 10.,
+        function: |x: TNumber| Logarithm::ln(x + 15.) as TNumber + x.sin(),
+        first_derivative: |x: TNumber| {
+            (3. / 10.) * x.pow(x) + (3. * x.pow(x) * Logarithm::ln(x)) / 10.
+        },
     },
     // NonLinearEquation {
     //     function: todo!(),
-    //     first_derevative: todo!(),
+    //     first_derivative: todo!(),
     // },
 ];
 
-const SYSTEMS: [SystemOfEquations; 1] = [SystemOfEquations {
+const SYSTEMS: [SystemOfEquations; 0] = [/* SystemOfEquations {
     first: EquationWithPhi {
         function: |x| (1. - Trigonometry::sin(x) / 2., PointCoordinate::Y),
         phi: |(_x, y)| 0.7 - Trigonometry::cos(y - 1.),
@@ -52,7 +60,7 @@ const SYSTEMS: [SystemOfEquations; 1] = [SystemOfEquations {
         function: |y| (0.7 - Trigonometry::cos(y - 1.), PointCoordinate::X),
         phi: |(x, _y)| 1. - Trigonometry::sin(x) / 2.,
     },
-}];
+} */];
 
 #[no_mangle]
 pub extern "C" fn main() {
@@ -66,10 +74,10 @@ pub extern "C" fn main() {
         },
     );
     let mut points_handler =
-        |equation: &mut dyn FnMut(f64) -> (f64, PointCoordinate),
+        |equation: &mut dyn FnMut(TNumber) -> (TNumber, PointCoordinate),
          write_back: &mut dyn FnMut(Point) -> ()| {
             for index in 0..POINT_AMOUNT {
-                let variable = LEFT_BORDER + POINT_INTERVAL_LENGTH * index as f64;
+                let variable = LEFT_BORDER + POINT_INTERVAL_LENGTH * index as TNumber;
                 let (dependent, coord) = (equation)(variable);
                 let point = match coord {
                     PointCoordinate::X => Point::new(dependent, variable),

@@ -1,19 +1,20 @@
-use core::intrinsics;
+use libm;
 
-use protocol::point::Point;
+use core::intrinsics;
+use protocol::{point::Point, TNumber};
 
 use crate::system_of_equations::SystemOfEquations;
 
 pub(crate) const MAX_ITERATIONS: usize = 1000;
 
-pub const LEFT_BORDER: f64 = -10.;
-pub const RIGHT_BORDER: f64 = 10.;
-pub const POINT_INTERVAL_LENGTH: f64 = (RIGHT_BORDER - LEFT_BORDER) / POINT_AMOUNT as f64;
+pub const LEFT_BORDER: TNumber = -10.;
+pub const RIGHT_BORDER: TNumber = 10.;
+pub const POINT_INTERVAL_LENGTH: TNumber = (RIGHT_BORDER - LEFT_BORDER) / POINT_AMOUNT as TNumber;
 pub use protocol::POINT_AMOUNT;
 
 pub struct Range {
-    left: f64,
-    right: f64,
+    left: TNumber,
+    right: TNumber,
 }
 
 mod chord_method;
@@ -26,17 +27,17 @@ pub(crate) enum MethodError {
 }
 
 pub(crate) struct SolverInput {
-    pub start: f64,
-    pub end: f64,
-    pub epsilon: f64,
+    pub start: TNumber,
+    pub end: TNumber,
+    pub epsilon: TNumber,
 }
 
-pub type SingleArgFunction = fn(x: f64) -> f64;
+pub type SingleArgFunction = fn(x: TNumber) -> TNumber;
 
 #[derive(Clone)]
 pub struct NonLinearEquation {
     pub function: SingleArgFunction,
-    pub first_derevative: SingleArgFunction,
+    pub first_derivative: SingleArgFunction,
 }
 
 pub struct Equations {
@@ -53,14 +54,14 @@ pub trait Abs {
 }
 
 pub trait Pow {
-    fn pow(self, power: f64) -> Self;
+    fn pow(self, power: Self) -> Self;
 }
 
 impl Pow for f64 {
     fn pow(self, power: f64) -> Self {
         // migrate to intrinsics
         // libc supports only f32
-        unsafe { avr_libc::pow(self, power) }
+        unsafe { intrinsics::powf32(self as f32, power as f32) as f64 }
     }
 }
 
@@ -81,11 +82,12 @@ pub trait Trigonometry {
 
 impl Trigonometry for f64 {
     fn sin(self) -> Self {
-        unsafe { avr_libc::sin(self) }
+        unsafe { intrinsics::sinf32(self as f32) as f64 }
     }
 
     fn cos(self) -> Self {
-        unsafe { avr_libc::cos(self) }
+        // (1. - self.sin().pow(2.)).pow(0.5)
+        unsafe { intrinsics::cosf32(self as f32) as f64 }
     }
 }
 
@@ -95,6 +97,6 @@ pub trait Logarithm {
 
 impl Logarithm for f64 {
     fn ln(self) -> Self {
-        unsafe { avr_libc::log(self) }
+        libm::log(self)
     }
 }
