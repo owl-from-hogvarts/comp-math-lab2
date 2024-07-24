@@ -7,9 +7,16 @@ pub use equation_mode::*;
 use payloads::{ComputeRootPayload, FunctionPointsPayload};
 
 pub enum RequestPackage {
-    FunctionPoints { payload: FunctionPointsPayload },
+    /// In case of system of equations await two
+    /// [`FunctionPointsResponse`](crate::response::FunctionPointsResponse)'s.
+    /// That is response per function within system.
+    FunctionPoints {
+        payload: FunctionPointsPayload,
+    },
     InitialApproximations,
-    ComputeRoot { payload: ComputeRootPayload },
+    ComputeRoot {
+        payload: ComputeRootPayload,
+    },
 }
 
 impl RequestPackage {
@@ -78,4 +85,3 @@ impl ByteSerializable<PACKAGE_SIZE> for RequestPackage {
         }
     }
 }
-

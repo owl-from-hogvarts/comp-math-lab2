@@ -9,6 +9,7 @@ pub enum ResponsePackage {
     InitialApproximations(InitialApproximationsResponse),
     ComputeRoot(ComputeRootResponse),
     FunctionPoints(FunctionPointsResponse),
+    FunctionPointsSecond(FunctionPointsResponse),
 }
 
 impl From<InitialApproximationsResponse> for ResponsePackage {
