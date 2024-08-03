@@ -5,11 +5,67 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
+pub enum MethodError {
+    NoRootInRange,
+    MoreThanOneRootInRange,
+    Diverges,
+}
+
+impl MethodError {
+    const NO_ROOT_IN_RANGE: u8 = 0;
+    const MORE_THAN_ONE_ROOT_IN_RANGE: u8 = 1;
+    const DIVERGES: u8 = 2;
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum ResponsePackage {
     InitialApproximations(InitialApproximationsResponse),
-    ComputeRoot(ComputeRootResponse),
+    ComputeRoot(Result<ComputeRootResponse, MethodError>),
     FunctionPoints(FunctionPointsResponse),
     FunctionPointsSecond(FunctionPointsResponse),
+}
+
+impl ByteSerializable<PACKAGE_SIZE> for Result<ComputeRootResponse, MethodError> {
+    fn to_bytes(&self) -> [u8; PACKAGE_SIZE] {
+        match self {
+            Ok(response) => response.to_bytes(),
+            Err(error) => {
+                const ROOT_OFFSET: usize = ComputeRootResponse::ROOT_OFFSET;
+                let mut bytes = [0; PACKAGE_SIZE];
+
+                bytes[ROOT_OFFSET..ROOT_OFFSET + T_NUMBER_SIZE_BYTES]
+                    .copy_from_slice(&TNumber::to_le_bytes(TNumber::NAN));
+
+                let error_status = match error {
+                    MethodError::NoRootInRange => MethodError::NO_ROOT_IN_RANGE,
+                    MethodError::MoreThanOneRootInRange => MethodError::MORE_THAN_ONE_ROOT_IN_RANGE,
+                    MethodError::Diverges => MethodError::DIVERGES,
+                };
+
+                bytes[ComputeRootResponse::STATUS_OFFSET] = error_status;
+
+                bytes
+            }
+        }
+    }
+
+    fn from_bytes(raw_bytes: &[u8; PACKAGE_SIZE]) -> Self {
+        let marker_bytes: [u8; T_NUMBER_SIZE_BYTES] =
+            read_field(raw_bytes, ComputeRootResponse::ROOT_OFFSET);
+        let marker = TNumber::from_le_bytes(marker_bytes);
+        if !marker.is_nan() {
+            return Ok(ComputeRootResponse::from_bytes(raw_bytes));
+        }
+
+        let error = match raw_bytes[ComputeRootResponse::STATUS_OFFSET] {
+            MethodError::NO_ROOT_IN_RANGE => MethodError::NoRootInRange,
+            MethodError::MORE_THAN_ONE_ROOT_IN_RANGE => MethodError::MoreThanOneRootInRange,
+            MethodError::DIVERGES => MethodError::Diverges,
+            _ => unreachable!(),
+        };
+
+        Err(error)
+    }
 }
 
 impl From<InitialApproximationsResponse> for ResponsePackage {
@@ -18,8 +74,8 @@ impl From<InitialApproximationsResponse> for ResponsePackage {
     }
 }
 
-impl From<ComputeRootResponse> for ResponsePackage {
-    fn from(value: ComputeRootResponse) -> Self {
+impl From<Result<ComputeRootResponse, MethodError>> for ResponsePackage {
+    fn from(value: Result<ComputeRootResponse, MethodError>) -> Self {
         Self::ComputeRoot(value)
     }
 }
@@ -51,6 +107,7 @@ pub struct ComputeRootResponse {
 
 impl ComputeRootResponse {
     const ROOT_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET;
+    const STATUS_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET + T_NUMBER_SIZE_BYTES;
 }
 
 impl ByteSerializable<PACKAGE_SIZE> for InitialApproximationsResponse {
