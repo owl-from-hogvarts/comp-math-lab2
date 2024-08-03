@@ -5,8 +5,14 @@ use crate::byte_serializable::ByteSerializable;
 pub mod compute_method;
 
 #[derive(Copy, Clone, Debug)]
+pub struct SingleEquation {
+    pub method: Method,
+    pub equation_number: u8,
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum EquationMode {
-    Single { method: Method, equation_number: u8 },
+    Single(SingleEquation),
     SystemOfEquations { system_number: u8 },
 }
 
@@ -22,10 +28,10 @@ impl ByteSerializable<{ Self::EQUATION_MODE_SIZE }> for EquationMode {
     fn to_bytes(&self) -> [u8; Self::EQUATION_MODE_SIZE] {
         let mut bytes = [0_u8; Self::EQUATION_MODE_SIZE];
         match self {
-            EquationMode::Single {
+            EquationMode::Single(SingleEquation {
                 method,
                 equation_number,
-            } => {
+            }) => {
                 bytes[0] = EquationModeRaw::SINGLE_EQUATION_MODE;
                 bytes[Self::METHOD_OFFSET] = method.to_byte();
                 bytes[Self::EQUATION_NUMBER_OFFSET] = *equation_number;
@@ -41,10 +47,10 @@ impl ByteSerializable<{ Self::EQUATION_MODE_SIZE }> for EquationMode {
 
     fn from_bytes(raw_bytes: &[u8; Self::EQUATION_MODE_SIZE]) -> Self {
         match raw_bytes[0] {
-            EquationModeRaw::SINGLE_EQUATION_MODE => Self::Single {
+            EquationModeRaw::SINGLE_EQUATION_MODE => Self::Single(SingleEquation {
                 method: Method::from_byte(raw_bytes[Self::METHOD_OFFSET]),
                 equation_number: raw_bytes[Self::EQUATION_NUMBER_OFFSET],
-            },
+            }),
             EquationModeRaw::SYSTEM_OF_EQUATIONS_MODE => Self::SystemOfEquations {
                 system_number: raw_bytes[Self::SYSTEM_NUMBER_OFFSET],
             },

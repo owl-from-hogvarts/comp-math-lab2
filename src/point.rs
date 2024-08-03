@@ -16,6 +16,10 @@ pub enum PointCoordinate {
 }
 
 impl Point {
+    pub const POINT_SIZE_BYTES: usize = 2 * T_NUMBER_SIZE_BYTES;
+}
+
+impl Point {
     pub fn new(x: TNumber, y: TNumber) -> Self {
         Self { x, y }
     }
@@ -104,6 +108,3 @@ impl ByteSerializable<{ Self::POINT_SIZE_BYTES }> for Point {
     }
 }
 
-impl Point {
-    pub const POINT_SIZE_BYTES: usize = 2 * T_NUMBER_SIZE_BYTES;
-}

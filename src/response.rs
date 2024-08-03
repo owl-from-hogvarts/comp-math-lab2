@@ -1,3 +1,5 @@
+use core::fmt::Display;
+
 use crate::{
     byte_serializable::{read_field, ByteSerializable},
     point::Point,
@@ -15,6 +17,16 @@ impl MethodError {
     const NO_ROOT_IN_RANGE: u8 = 0;
     const MORE_THAN_ONE_ROOT_IN_RANGE: u8 = 1;
     const DIVERGES: u8 = 2;
+}
+
+impl Display for MethodError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            MethodError::NoRootInRange => write!(f, "No roots found withing range"),
+            MethodError::MoreThanOneRootInRange => write!(f, "More than one root withing range"),
+            MethodError::Diverges => write!(f, "Method diverges"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -90,7 +102,7 @@ impl ResponsePackage {
     const PAYLOAD_OFFSET: usize = 0;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InitialApproximationsResponse {
     pub left: TNumber,
     pub right: TNumber,
@@ -98,16 +110,6 @@ pub struct InitialApproximationsResponse {
 impl InitialApproximationsResponse {
     const LEFT_BYTES_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET;
     const RIGHT_BYTES_OFFSET: usize = Self::LEFT_BYTES_OFFSET + T_NUMBER_SIZE_BYTES;
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct ComputeRootResponse {
-    pub root: Point,
-}
-
-impl ComputeRootResponse {
-    const ROOT_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET;
-    const STATUS_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET + T_NUMBER_SIZE_BYTES;
 }
 
 impl ByteSerializable<PACKAGE_SIZE> for InitialApproximationsResponse {
@@ -134,6 +136,16 @@ impl ByteSerializable<PACKAGE_SIZE> for InitialApproximationsResponse {
 
         Self { left, right }
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ComputeRootResponse {
+    pub root: Point,
+}
+
+impl ComputeRootResponse {
+    const ROOT_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET;
+    const STATUS_OFFSET: usize = ResponsePackage::PAYLOAD_OFFSET + T_NUMBER_SIZE_BYTES;
 }
 
 impl ByteSerializable<PACKAGE_SIZE> for ComputeRootResponse {

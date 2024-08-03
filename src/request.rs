@@ -2,9 +2,12 @@ use crate::byte_serializable::{read_field, ByteSerializable};
 use crate::{TNumber, PACKAGE_SIZE, T_NUMBER_SIZE_BYTES};
 
 mod equation_mode;
+mod selection;
 pub mod payloads;
+
+pub use selection::Selection;
 pub use equation_mode::*;
-use payloads::{ComputeRootPayload, FunctionPointsPayload};
+use payloads::ComputeRootPayload;
 
 #[derive(Copy, Clone, Debug)]
 pub enum RequestPackage {
@@ -12,7 +15,7 @@ pub enum RequestPackage {
     /// [`FunctionPointsResponse`](crate::response::FunctionPointsResponse)'s.
     /// That is response per function within system.
     FunctionPoints {
-        payload: FunctionPointsPayload,
+        payload: Selection,
     },
     InitialApproximations,
     ComputeRoot {
@@ -43,7 +46,7 @@ impl ByteSerializable<PACKAGE_SIZE> for RequestPackage {
             RequestPackage::FunctionPoints { payload } => package
                 [RequestPackage::REQUEST_PAYLOAD_OFFSET
                     ..(RequestPackage::REQUEST_PAYLOAD_OFFSET
-                        + FunctionPointsPayload::FUNCTION_POINTS_PAYLOAD_SIZE)]
+                        + Selection::FUNCTION_POINTS_PAYLOAD_SIZE)]
                 .copy_from_slice(&payload.to_bytes()),
             RequestPackage::InitialApproximations => (),
             RequestPackage::ComputeRoot { payload } => {
@@ -64,7 +67,7 @@ impl ByteSerializable<PACKAGE_SIZE> for RequestPackage {
         let request_type = raw_bytes[RequestPackage::REQUEST_TYPE_OFFSET];
         match request_type {
             RequestPackage::FUNCTION_POINTS_TYPE => RequestPackage::FunctionPoints {
-                payload: FunctionPointsPayload::from_bytes(&read_field(
+                payload: Selection::from_bytes(&read_field(
                     raw_bytes,
                     Self::REQUEST_PAYLOAD_OFFSET,
                 )),
