@@ -10,10 +10,12 @@ use super::MAX_ITERATIONS;
 
 pub struct SimpleIterationSolver;
 
-type Type = MethodError;
-
 impl Solver<NonLinearEquation> for SimpleIterationSolver {
-    fn solve(&self, equation: &NonLinearEquation, parameters: &SolverInput) -> Result<Point, Type> {
+    fn solve(
+        &self,
+        equation: &NonLinearEquation,
+        parameters: &SolverInput,
+    ) -> Result<Point, MethodError> {
         let &SolverInput {
             start,
             end,
@@ -49,7 +51,17 @@ fn calculate_lambda(
     }: &NonLinearEquation,
     &SolverInput { start, end, .. }: &SolverInput,
 ) -> TNumber {
-    1. / TNumber::max(first_derivative(start), first_derivative(end))
+    let sign = if first_derivative(start).is_sign_negative() {
+        1.
+    } else {
+        -1.
+    };
+
+    sign * 1.
+        / TNumber::max(
+            Abs::abs(first_derivative(start)),
+            Abs::abs(first_derivative(end)),
+        )
 }
 
 fn is_precise(x: TNumber, next_x: TNumber, q: TNumber, epsilon: TNumber) -> bool {
