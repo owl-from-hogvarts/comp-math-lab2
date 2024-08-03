@@ -18,13 +18,15 @@ use core::panic::PanicInfo;
 
 use buttons::DEBOUNCED_BUTTONS_CONTEXT;
 use equations::{
-    ChordSolver, Equations, Logarithm, NonLinearEquation, Pow, SecantSolver, SimpleIterationSolver,
-    Solver, SolverInput, Trigonometry, LEFT_BORDER, POINT_AMOUNT, POINT_INTERVAL_LENGTH,
+    check_roots_in_range, ChordSolver, Equations, Logarithm, NonLinearEquation, Pow, SecantSolver,
+    SimpleIterationSolver, Solver, SolverInput, Trigonometry, LEFT_BORDER, POINT_AMOUNT,
+    POINT_INTERVAL_LENGTH, RIGHT_BORDER,
 };
 use lazy::Lazy;
 use protocol::point::{Point, PointCoordinate};
 use protocol::request::compute_method::Method;
 use protocol::request::payloads::ComputeRootPayload;
+use protocol::request::SingleEquation;
 use protocol::response::InitialApproximationsResponse;
 use protocol::TNumber;
 use protocol_handler::Connection;
@@ -48,9 +50,7 @@ const SINGLE: [NonLinearEquation; 2] = [
     },
     NonLinearEquation {
         function: |x: TNumber| Logarithm::ln(x + 15.) as TNumber,
-        first_derivative: |x: TNumber| {
-            (3. / 10.) * x.pow(x) + (3. * x.pow(x) * Logarithm::ln(x)) / 10.
-        },
+        first_derivative: |x: TNumber| 1. / (x + 15.),
     },
     // NonLinearEquation {
     //     function: todo!(),
@@ -88,10 +88,30 @@ fn update_initial_approximations(event: InitialApproximationsEvent) {
 
     let approximations = unsafe { &mut *INITIAL_APPROXIMATIONS.get() };
     match event {
-        InitialApproximationsEvent::LeftUp => approximations.left += STEP,
-        InitialApproximationsEvent::LeftDown => approximations.left -= STEP,
-        InitialApproximationsEvent::RightUp => approximations.right += STEP,
-        InitialApproximationsEvent::RightDown => approximations.right -= STEP,
+        InitialApproximationsEvent::LeftUp => {
+            let new = approximations.left + STEP;
+            if (LEFT_BORDER..RIGHT_BORDER).contains(&new) {
+                approximations.left = new
+            }
+        }
+        InitialApproximationsEvent::LeftDown => {
+            let new = approximations.left - STEP;
+            if (LEFT_BORDER..RIGHT_BORDER).contains(&new) {
+                approximations.left = new
+            }
+        }
+        InitialApproximationsEvent::RightUp => {
+            let new = approximations.right + STEP;
+            if (LEFT_BORDER..RIGHT_BORDER).contains(&new) {
+                approximations.right = new
+            }
+        }
+        InitialApproximationsEvent::RightDown => {
+            let new = approximations.right - STEP;
+            if (LEFT_BORDER..RIGHT_BORDER).contains(&new) {
+                approximations.right = new
+            }
+        }
     }
 }
 
@@ -149,12 +169,13 @@ pub extern "C" fn main() {
         };
 
         match payload.mode {
-            protocol::request::EquationMode::Single {
+            protocol::request::EquationMode::Single(SingleEquation {
                 method,
                 equation_number,
-            } => {
+            }) => {
                 let equation = &SINGLE[equation_number as usize];
 
+                check_roots_in_range(equation, &parameters)?;
                 match method {
                     Method::Chord => ChordSolver::solve(&ChordSolver, equation, &parameters),
                     Method::Secant => SecantSolver::solve(&SecantSolver, equation, &parameters),

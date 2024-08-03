@@ -79,7 +79,7 @@ impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
                     let mut writer = |point: Point| self.channel.write_blocking(&point.to_bytes());
                     match payload.mode {
                         protocol::request::EquationModeRaw::SingleEquation => {
-                            let equation = &self.context.single[payload.equation_number as usize];
+                            let equation = &self.context.single[payload.index as usize];
                             handler(
                                 &mut |x| ((equation.function)(x), PointCoordinate::Y),
                                 &mut writer,
@@ -87,7 +87,7 @@ impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
                         }
                         protocol::request::EquationModeRaw::SystemOfEquations => {
                             let mut system =
-                                self.context.systems[payload.equation_number as usize].clone();
+                                self.context.systems[payload.index as usize].clone();
                             handler(&mut system.first.function, &mut writer);
                             handler(&mut system.second.function, &mut writer);
                         }

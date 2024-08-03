@@ -31,6 +31,36 @@ pub(crate) struct SolverInput {
     pub epsilon: TNumber,
 }
 
+pub fn check_roots_in_range(
+    equation: &NonLinearEquation,
+    parameters: &SolverInput,
+) -> Result<(), MethodError> {
+    let different_signs = (equation.function)(parameters.start).is_sign_negative()
+        != (equation.function)(parameters.end).is_sign_negative();
+
+    const SAMPLES_AMOUNT: usize = 100;
+
+    let mut x = parameters.start;
+    let mut derevative_different_signs = false;
+    let is_first_negative = (equation.first_derivative)(x).is_sign_negative();
+    let step = (parameters.end - parameters.start) / SAMPLES_AMOUNT as f32;
+    for _ in 0..SAMPLES_AMOUNT {
+        x += step;
+        let y = (equation.first_derivative)(x);
+        if y.is_sign_negative() != is_first_negative {
+            derevative_different_signs = true;
+            break;
+        }
+    }
+
+    // using heurisctics to guess amount of roots withing range
+    match (different_signs, derevative_different_signs) {
+        (true, false | true) => Ok(()),
+        (false, true) => Err(MethodError::MoreThanOneRootInRange),
+        (false, false) => Err(MethodError::NoRootInRange),
+    }
+}
+
 pub type SingleArgFunction = fn(x: TNumber) -> TNumber;
 
 #[derive(Clone)]
