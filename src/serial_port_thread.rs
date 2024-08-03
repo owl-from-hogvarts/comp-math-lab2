@@ -5,6 +5,7 @@ use std::time::Duration;
 use iced::futures::channel::mpsc::{Receiver, Sender};
 
 use iced::futures::SinkExt;
+use protocol::response::{ComputeRootResponse, MethodError, ResponsePackage};
 use protocol::{byte_serializable::ByteSerializable, request::RequestPackage};
 use protocol::{is_signature_valid, PROTOCOL_SIGNATURE, PROTOCOL_SIGNATURE_SIZE};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -93,6 +94,7 @@ async fn loop_iteration(
             protocol::request::EquationModeRaw::SystemOfEquations => {
                 messages
                     .send(UIMessage::ResponseReceived(
+                        request.clone(),
                         protocol::response::FunctionPointsResponse::from(&*read_buffer_long).into(),
                     ))
                     .await?;
@@ -106,11 +108,17 @@ async fn loop_iteration(
             protocol::response::InitialApproximationsResponse::from_bytes(read_buffer_short).into()
         }
         RequestPackage::ComputeRoot { .. } => {
-            protocol::response::ComputeRootResponse::from_bytes(read_buffer_short).into()
+            Result::<ComputeRootResponse, MethodError>::from_bytes(read_buffer_short).into()
         }
     };
 
-    messages.send(UIMessage::ResponseReceived(response)).await?;
+    if let ResponsePackage::ComputeRoot(r) = response {
+        let _ = dbg!(r);
+    }
+
+    messages
+        .send(UIMessage::ResponseReceived(request, response))
+        .await?;
 
     // prevent message flood
     tokio::time::sleep(Duration::from_millis(500)).await;
