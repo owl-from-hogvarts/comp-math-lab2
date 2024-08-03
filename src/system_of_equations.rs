@@ -1,9 +1,10 @@
 use protocol::{
     point::{Point, PointCoordinate},
+    response::MethodError,
     TNumber,
 };
 
-use crate::equations::{Abs, MethodError, Solver, SolverInput, MAX_ITERATIONS};
+use crate::equations::{Abs, Solver, SolverInput, MAX_ITERATIONS};
 
 #[derive(Clone)]
 pub struct EquationWithPhi {

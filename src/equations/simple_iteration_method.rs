@@ -1,4 +1,5 @@
 use protocol::point::Point;
+use protocol::TNumber;
 
 use super::Abs;
 use super::MethodError;
@@ -22,7 +23,7 @@ impl Solver<NonLinearEquation> for SimpleIterationSolver {
         let phi = |x| x + lambda * (equation.function)(x);
         let phi_derivative = |x| 1. + lambda * (equation.first_derivative)(x);
 
-        let q = f64::max(phi_derivative(start), phi_derivative(end));
+        let q = TNumber::max(phi_derivative(start), phi_derivative(end));
         if q >= 1. {
             return Err(MethodError::Diverges);
         }
@@ -47,11 +48,11 @@ fn calculate_lambda(
         first_derivative, ..
     }: &NonLinearEquation,
     &SolverInput { start, end, .. }: &SolverInput,
-) -> f64 {
-    1. / f64::max(first_derivative(start), first_derivative(end))
+) -> TNumber {
+    1. / TNumber::max(first_derivative(start), first_derivative(end))
 }
 
-fn is_precise(x: f64, next_x: f64, q: f64, epsilon: f64) -> bool {
+fn is_precise(x: TNumber, next_x: TNumber, q: TNumber, epsilon: TNumber) -> bool {
     let difference = Abs::abs(x - next_x);
     if q <= 0.5 {
         return difference < epsilon;

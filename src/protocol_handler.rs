@@ -6,6 +6,8 @@ use protocol::request::payloads::ComputeRootPayload;
 use protocol::request::RequestPackage;
 use protocol::response::ComputeRootResponse;
 use protocol::response::InitialApproximationsResponse;
+use protocol::response::MethodError;
+use protocol::TNumber;
 use protocol::PACKAGE_SIZE;
 
 use ruduino::{cores::current::USART0, modules::HardwareUsart};
@@ -14,11 +16,11 @@ use crate::equations::Equations;
 use crate::usart::Usart;
 
 type PointsHandler<'a> = &'a mut dyn FnMut(
-    &mut dyn FnMut(f64) -> (f64, PointCoordinate),
+    &mut dyn FnMut(TNumber) -> (TNumber, PointCoordinate),
     &mut dyn FnMut(Point) -> (),
 ) -> ();
 type InitialApproximationHandler<'b> = &'b mut dyn FnMut() -> InitialApproximationsResponse;
-type ComputeRootHandler<'c> = &'c mut dyn FnMut(ComputeRootPayload) -> ComputeRootResponse;
+type ComputeRootHandler<'c> = &'c mut dyn FnMut(ComputeRootPayload) -> Result<Point, MethodError>;
 
 pub struct Connection<'aa, 'a, 'b, 'c, T: HardwareUsart> {
     channel: &'aa Usart<T>,
@@ -100,7 +102,9 @@ impl<'aa, 'a, 'b, 'c> Connection<'aa, 'a, 'b, 'c, USART0> {
             }
             RequestPackage::ComputeRoot { payload } => {
                 if let Some(handler) = &mut self.function_compute_root {
-                    let bytes = handler(payload).to_bytes();
+                    let bytes = handler(payload)
+                        .map(|point| ComputeRootResponse { root: point })
+                        .to_bytes();
                     self.channel.write_blocking(&bytes);
                 }
             }

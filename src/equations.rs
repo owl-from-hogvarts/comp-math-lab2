@@ -1,6 +1,6 @@
 use libm;
 
-use core::intrinsics;
+use protocol::response::MethodError;
 use protocol::{point::Point, TNumber};
 
 use crate::system_of_equations::SystemOfEquations;
@@ -21,10 +21,9 @@ mod chord_method;
 mod secant_method;
 mod simple_iteration_method;
 
-#[derive(Debug)]
-pub(crate) enum MethodError {
-    Diverges,
-}
+pub use chord_method::ChordSolver;
+pub use secant_method::SecantSolver;
+pub use simple_iteration_method::SimpleIterationSolver;
 
 pub(crate) struct SolverInput {
     pub start: TNumber,
@@ -57,16 +56,16 @@ pub trait Pow {
     fn pow(self, power: Self) -> Self;
 }
 
-impl Pow for f64 {
-    fn pow(self, power: f64) -> Self {
+impl Pow for TNumber {
+    fn pow(self, power: TNumber) -> Self {
         // migrate to intrinsics
         // libc supports only f32
-        unsafe { intrinsics::powf32(self as f32, power as f32) as f64 }
+        unsafe { avr_libc::powf(self, power) as TNumber }
     }
 }
 
-impl Abs for f64 {
-    fn abs(self) -> f64 {
+impl Abs for TNumber {
+    fn abs(self) -> TNumber {
         if self.is_sign_positive() {
             return self;
         }
@@ -80,14 +79,14 @@ pub trait Trigonometry {
     fn cos(self) -> Self;
 }
 
-impl Trigonometry for f64 {
+impl Trigonometry for TNumber {
     fn sin(self) -> Self {
-        unsafe { intrinsics::sinf32(self as f32) as f64 }
+        unsafe { avr_libc::sinf(self as f32) as TNumber }
     }
 
     fn cos(self) -> Self {
         // (1. - self.sin().pow(2.)).pow(0.5)
-        unsafe { intrinsics::cosf32(self as f32) as f64 }
+        unsafe { avr_libc::cosf(self as f32) as TNumber }
     }
 }
 
@@ -95,8 +94,8 @@ pub trait Logarithm {
     fn ln(self) -> Self;
 }
 
-impl Logarithm for f64 {
+impl Logarithm for TNumber {
     fn ln(self) -> Self {
-        libm::log(self)
+        libm::logf(self)
     }
 }
