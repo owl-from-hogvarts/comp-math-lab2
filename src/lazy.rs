@@ -8,6 +8,12 @@ enum LazyState<T, F> {
     Poisoned,
 }
 
+
+/// Unsafe notice!
+/// Lazy is prooperly syncronized for atmega328:
+/// Cricital sections are executed with interrupts disabled
+unsafe impl<T, F> Sync for Lazy<T, F> {}
+
 pub struct Lazy<T, F = fn() -> T> {
     state: LazyState<T, F>,
 }
