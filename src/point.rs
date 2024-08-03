@@ -16,7 +16,7 @@ pub enum PointCoordinate {
 }
 
 impl Point {
-    pub fn new(x: f64, y: f64) -> Self {
+    pub fn new(x: TNumber, y: TNumber) -> Self {
         Self { x, y }
     }
 
@@ -43,10 +43,10 @@ impl Neg for Point {
     }
 }
 
-impl Mul<f64> for Point {
+impl Mul<TNumber> for Point {
     type Output = Point;
 
-    fn mul(self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: TNumber) -> Self::Output {
         Point {
             x: rhs * self.x,
             y: rhs * self.y,
@@ -76,7 +76,7 @@ impl Sub for Point {
     }
 }
 
-impl Mul<Point> for f64 {
+impl Mul<Point> for TNumber {
     type Output = Point;
 
     fn mul(self, rhs: Point) -> Self::Output {
@@ -98,12 +98,12 @@ impl ByteSerializable<{ Self::POINT_SIZE_BYTES }> for Point {
 
     fn from_bytes(raw_bytes: &[u8; Self::POINT_SIZE_BYTES]) -> Self {
         Self {
-            x: f64::from_le_bytes(read_field(raw_bytes, 0)),
-            y: f64::from_le_bytes(read_field(raw_bytes, T_NUMBER_SIZE_BYTES)),
+            x: TNumber::from_le_bytes(read_field(raw_bytes, 0)),
+            y: TNumber::from_le_bytes(read_field(raw_bytes, T_NUMBER_SIZE_BYTES)),
         }
     }
 }
 
 impl Point {
-    pub const POINT_SIZE_BYTES: usize = 2 * 8;
+    pub const POINT_SIZE_BYTES: usize = 2 * T_NUMBER_SIZE_BYTES;
 }

@@ -14,8 +14,8 @@ pub const POINT_AMOUNT: usize = 256;
 pub const LONG_PACKAGE_SIZE: usize = Point::POINT_SIZE_BYTES * POINT_AMOUNT;
 pub const PACKAGE_SIZE: usize = 16;
 
-pub const T_NUMBER_SIZE_BYTES: usize = 8;
-pub type TNumber = f64;
+pub const T_NUMBER_SIZE_BYTES: usize = size_of::<TNumber>();
+pub type TNumber = f32;
 
 pub fn is_signature_valid(bytes: &[u8]) -> bool {
     const SIGNATURE_BYTES: [u8; PROTOCOL_SIGNATURE_SIZE] = PROTOCOL_SIGNATURE.to_le_bytes();

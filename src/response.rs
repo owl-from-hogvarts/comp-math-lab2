@@ -67,13 +67,13 @@ impl ByteSerializable<PACKAGE_SIZE> for InitialApproximationsResponse {
 
     fn from_bytes(raw_bytes: &[u8; PACKAGE_SIZE]) -> Self {
         let left_bytes: [u8; T_NUMBER_SIZE_BYTES] = read_field(raw_bytes, Self::LEFT_BYTES_OFFSET);
-        let left = f64::from_le_bytes(left_bytes);
+        let left = TNumber::from_le_bytes(left_bytes);
 
-        let right_bytes: [u8; 8] = raw_bytes
+        let right_bytes: [u8; T_NUMBER_SIZE_BYTES] = raw_bytes
             [Self::RIGHT_BYTES_OFFSET..(Self::RIGHT_BYTES_OFFSET + T_NUMBER_SIZE_BYTES)]
             .try_into()
             .unwrap();
-        let right = f64::from_le_bytes(right_bytes);
+        let right = TNumber::from_le_bytes(right_bytes);
 
         Self { left, right }
     }

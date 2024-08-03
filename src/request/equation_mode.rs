@@ -4,6 +4,7 @@ use crate::byte_serializable::ByteSerializable;
 
 pub mod compute_method;
 
+#[derive(Copy, Clone, Debug)]
 pub enum EquationMode {
     Single { method: Method, equation_number: u8 },
     SystemOfEquations { system_number: u8 },

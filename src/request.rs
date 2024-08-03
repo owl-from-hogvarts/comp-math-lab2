@@ -1,11 +1,12 @@
 use crate::byte_serializable::{read_field, ByteSerializable};
-use crate::{PACKAGE_SIZE, T_NUMBER_SIZE_BYTES};
+use crate::{TNumber, PACKAGE_SIZE, T_NUMBER_SIZE_BYTES};
 
 mod equation_mode;
 pub mod payloads;
 pub use equation_mode::*;
 use payloads::{ComputeRootPayload, FunctionPointsPayload};
 
+#[derive(Copy, Clone, Debug)]
 pub enum RequestPackage {
     /// In case of system of equations await two
     /// [`FunctionPointsResponse`](crate::response::FunctionPointsResponse)'s.
@@ -50,7 +51,8 @@ impl ByteSerializable<PACKAGE_SIZE> for RequestPackage {
                     ..(RequestPackage::REQUEST_PAYLOAD_OFFSET + T_NUMBER_SIZE_BYTES)]
                     .copy_from_slice(&payload.epsilon.to_le_bytes());
 
-                package[ComputeRootPayload::MODE_OFFSET..(EquationMode::EQUATION_MODE_SIZE)]
+                package[ComputeRootPayload::MODE_OFFSET
+                    ..(ComputeRootPayload::MODE_OFFSET + EquationMode::EQUATION_MODE_SIZE)]
                     .copy_from_slice(&payload.mode.to_bytes());
             }
         };
@@ -76,7 +78,7 @@ impl ByteSerializable<PACKAGE_SIZE> for RequestPackage {
 
                 RequestPackage::ComputeRoot {
                     payload: ComputeRootPayload {
-                        epsilon: f64::from_le_bytes(epsilon_bytes),
+                        epsilon: TNumber::from_le_bytes(epsilon_bytes),
                         mode: EquationMode::from_bytes(&mode_bytes),
                     },
                 }

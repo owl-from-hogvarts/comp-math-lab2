@@ -2,6 +2,7 @@ use crate::{byte_serializable::ByteSerializable, TNumber, T_NUMBER_SIZE_BYTES};
 
 use super::{EquationMode, EquationModeRaw, RequestPackage};
 
+#[derive(Copy, Clone, Debug)]
 pub struct ComputeRootPayload {
   pub epsilon: TNumber,
   pub mode: EquationMode,
