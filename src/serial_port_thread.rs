@@ -112,10 +112,6 @@ async fn loop_iteration(
         }
     };
 
-    if let ResponsePackage::ComputeRoot(r) = response {
-        let _ = dbg!(r);
-    }
-
     messages
         .send(UIMessage::ResponseReceived(request, response))
         .await?;

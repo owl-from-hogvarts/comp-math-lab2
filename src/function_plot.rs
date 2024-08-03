@@ -1,4 +1,4 @@
-use std::{cell::RefCell, ops::Range};
+use std::{cell::RefCell, ops::Range, result::Result};
 
 use iced::Element;
 use plotters::{
@@ -11,9 +11,10 @@ use plotters::{
 use plotters_iced::{Chart, ChartWidget, DrawingBackend};
 use protocol::{
     point::{Point, PointCoordinate},
-    request::{EquationMode, EquationModeRaw, RequestPackage},
+    request::{EquationModeRaw, RequestPackage, Selection},
     response::{
-        ComputeRootResponse, FunctionPointsResponse, InitialApproximationsResponse, ResponsePackage,
+        ComputeRootResponse, FunctionPointsResponse, InitialApproximationsResponse, MethodError,
+        ResponsePackage,
     },
     TNumber,
 };
@@ -22,7 +23,7 @@ use crate::UIMessage;
 
 #[derive(Debug, Clone, Default)]
 pub struct EquationPlot {
-    pub computed_root: Option<ComputeRootResponse>,
+    pub computed_root: Option<Result<ComputeRootResponse, MethodError>>,
     pub function_points: Option<FunctionPointsResponse>,
 }
 
@@ -35,7 +36,7 @@ impl EquationPlot {
 
 #[derive(Debug, Clone, Default)]
 pub struct SystemOfEquationsPlot {
-    pub computed_root: Option<ComputeRootResponse>,
+    pub computed_root: Option<Result<ComputeRootResponse, MethodError>>,
     pub first_function_points: Option<FunctionPointsResponse>,
     pub second_function_points: Option<FunctionPointsResponse>,
 }
@@ -49,31 +50,8 @@ impl SystemOfEquationsPlot {
 }
 
 #[derive(Debug, Clone)]
-pub struct Selected {
-    pub mode: EquationModeRaw,
-    pub index: usize,
-}
-
-impl From<EquationMode> for Selected {
-    fn from(value: EquationMode) -> Self {
-        match value {
-            EquationMode::Single {
-                equation_number, ..
-            } => Selected {
-                mode: EquationModeRaw::SingleEquation,
-                index: equation_number as usize,
-            },
-            EquationMode::SystemOfEquations { system_number } => Selected {
-                mode: EquationModeRaw::SystemOfEquations,
-                index: system_number as usize,
-            },
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct FunctionPlot {
-    // shared state: shared accross different equations and modes
+    // shared state: shared across different equations and modes
     initial_approximations: Option<InitialApproximationsResponse>,
     /// `ratio = width / height`
     ///
@@ -94,11 +72,21 @@ pub struct FunctionPlot {
 }
 
 struct FunctionPlotState<'a> {
-    selection: Selected,
+    selection: Selection,
     state: &'a FunctionPlot,
 }
 
 impl FunctionPlot {
+    pub fn has_intial_approximations_changed(&self, response: &ResponsePackage) -> bool {
+        if let ResponsePackage::InitialApproximations(new) = response {
+            if let Some(old) = &self.initial_approximations {
+                return old != new;
+            }
+        }
+
+        false
+    }
+
     pub fn new() -> Self {
         const EQUATION_AMOUNT_WITH_RESERVE: usize = 10;
 
@@ -123,20 +111,17 @@ impl FunctionPlot {
         }
 
         let selection = match request {
-            RequestPackage::FunctionPoints { payload } => Selected {
-                mode: payload.mode,
-                index: payload.equation_number as usize,
-            },
-            RequestPackage::ComputeRoot { payload } => payload.mode.clone().into(),
+            RequestPackage::FunctionPoints { payload } => payload,
+            RequestPackage::ComputeRoot { payload } => &payload.mode.clone().into(),
             _ => unreachable!(),
         };
 
         match selection.mode {
             EquationModeRaw::SingleEquation => {
-                let single = &mut self.single[selection.index];
+                let single = &mut self.single[selection.index as usize];
 
                 match response {
-                    ResponsePackage::ComputeRoot(response) => single.computed_root = response.ok(),
+                    ResponsePackage::ComputeRoot(response) => single.computed_root = Some(response),
                     ResponsePackage::FunctionPoints(response) => {
                         single.function_points = Some(response)
                     }
@@ -144,10 +129,10 @@ impl FunctionPlot {
                 }
             }
             EquationModeRaw::SystemOfEquations => {
-                let system = &mut self.system[selection.index];
+                let system = &mut self.system[selection.index as usize];
 
                 match response {
-                    ResponsePackage::ComputeRoot(response) => system.computed_root = response.ok(),
+                    ResponsePackage::ComputeRoot(response) => system.computed_root = Some(response),
                     ResponsePackage::FunctionPoints(response) => {
                         system.first_function_points = Some(response)
                     }
@@ -160,11 +145,15 @@ impl FunctionPlot {
         }
     }
 
-    pub fn view(&self, selection: Selected) -> Element<UIMessage> {
+    pub fn view(&self, selection: Selection) -> Element<UIMessage> {
         let is_loading = self.initial_approximations.is_none()
             || match selection.mode {
-                EquationModeRaw::SingleEquation => self.single[selection.index].is_loading(),
-                EquationModeRaw::SystemOfEquations => self.system[selection.index].is_loading(),
+                EquationModeRaw::SingleEquation => {
+                    self.single[selection.index as usize].is_loading()
+                }
+                EquationModeRaw::SystemOfEquations => {
+                    self.system[selection.index as usize].is_loading()
+                }
             };
 
         if is_loading {
@@ -176,6 +165,17 @@ impl FunctionPlot {
         };
 
         ChartWidget::new(state).into()
+    }
+
+    pub(crate) fn get_compute_root(
+        &self,
+        selection: Selection,
+    ) -> Option<Result<ComputeRootResponse, MethodError>> {
+        let index = selection.index as usize;
+        match selection.mode {
+            EquationModeRaw::SingleEquation => self.single[index].computed_root,
+            EquationModeRaw::SystemOfEquations => self.system[index].computed_root,
+        }
     }
 }
 
@@ -199,7 +199,7 @@ impl<'a> Chart<UIMessage> for FunctionPlotState<'a> {
 
         let (function_points, second, computed_root) = match self.selection.mode {
             EquationModeRaw::SingleEquation => {
-                let equation = &self.state.single[self.selection.index];
+                let equation = &self.state.single[self.selection.index as usize];
                 (
                     &equation.function_points.unwrap(),
                     None,
@@ -207,7 +207,7 @@ impl<'a> Chart<UIMessage> for FunctionPlotState<'a> {
                 )
             }
             EquationModeRaw::SystemOfEquations => {
-                let system = &self.state.system[self.selection.index];
+                let system = &self.state.system[self.selection.index as usize];
                 (
                     &system.first_function_points.unwrap(),
                     Some(system.second_function_points),
@@ -246,7 +246,7 @@ impl<'a> Chart<UIMessage> for FunctionPlotState<'a> {
             )
         }
 
-        if let Some(response) = computed_root {
+        if let Some(Ok(response)) = computed_root {
             let computed_root = response.root;
             chart
                 .draw_series(PointSeries::<_, _, Circle<_, _>, _>::new(
@@ -272,9 +272,9 @@ impl<'a> Chart<UIMessage> for FunctionPlotState<'a> {
     }
 }
 
-fn with_coord_margin(range: Range<TNumber>, margin_persents: TNumber) -> Range<TNumber> {
+fn with_coord_margin(range: Range<TNumber>, margin_percents: TNumber) -> Range<TNumber> {
     let length = range.end - range.start;
-    let margin = length * margin_persents;
+    let margin = length * margin_percents;
     (range.start - margin)..(range.end + margin)
 }
 

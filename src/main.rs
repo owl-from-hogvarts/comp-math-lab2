@@ -1,20 +1,22 @@
 use std::fmt::Debug;
 
-use function_plot::{FunctionPlot, Selected};
+use function_plot::FunctionPlot;
 use iced::futures::channel::mpsc::{self, Sender};
 use iced::theme::{self};
 use iced::widget::text_input;
 use iced::widget::{button, column};
-use iced::widget::pick_list;
-use iced::widget::row;
-use iced::{command, Length, Padding};
+use iced::widget::{pick_list, Row};
+use iced::widget::{row, Text};
+use iced::{command, Alignment, Length, Padding};
 use iced::{widget::Column, Element, Settings};
 use iced::{Application, Command};
 
 use iced_aw::{tabs::Tabs, TabLabel};
-use protocol::request::payloads::{ComputeRootPayload, FunctionPointsPayload};
+use protocol::point::Point;
+use protocol::request::payloads::ComputeRootPayload;
 use protocol::request::{self, compute_method::Method, EquationModeRaw, RequestPackage};
-use protocol::response::ResponsePackage;
+use protocol::request::{Selection, SingleEquation};
+use protocol::response::{ComputeRootResponse, ResponsePackage};
 use protocol::TNumber;
 use serial_port_thread::start_loop;
 
@@ -52,12 +54,6 @@ fn main() -> iced::Result {
 }
 
 #[derive(Debug)]
-struct SingleEquation {
-    method: Method,
-    equation_number: u8,
-}
-
-#[derive(Debug)]
 struct ComputeRootUI {
     // this structure contains everything required to represent ui
     // and to send request
@@ -70,13 +66,29 @@ struct ComputeRootUI {
 }
 
 impl ComputeRootUI {
-    fn get_equation_number(&self) -> usize {
-        let number = match self.mode {
-            EquationModeRaw::SingleEquation => self.single_equation.equation_number,
-            EquationModeRaw::SystemOfEquations => self.system_of_equations_number,
-        } as usize;
+    /// Get selection from current state
+    fn build_selection(&self) -> Selection {
+        Selection {
+            mode: self.mode,
+            index: match self.mode {
+                EquationModeRaw::SingleEquation => self.single_equation.equation_number,
+                EquationModeRaw::SystemOfEquations => self.system_of_equations_number,
+            },
+        }
+    }
 
-        number
+    fn build_compute_root_payload(&self) -> ComputeRootPayload {
+        ComputeRootPayload {
+            epsilon: self.epsilon,
+            mode: match self.mode {
+                EquationModeRaw::SingleEquation => {
+                    request::EquationMode::Single(self.single_equation)
+                }
+                EquationModeRaw::SystemOfEquations => request::EquationMode::SystemOfEquations {
+                    system_number: self.system_of_equations_number,
+                },
+            },
+        }
     }
 }
 
@@ -91,6 +103,7 @@ impl Application for ComputeRootUI {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+        let mut approx_changed = false;
         match message {
             UIMessage::TabSelect(mode) => self.mode = mode,
             UIMessage::MethodSelect(method) => self.single_equation.method = method,
@@ -99,6 +112,7 @@ impl Application for ComputeRootUI {
                 self.single_equation.equation_number = equation_number
             }
             UIMessage::ResponseReceived(ref request, response) => {
+                approx_changed = self.plot.has_intial_approximations_changed(&response);
                 self.plot.update(request, response);
             }
             UIMessage::SystemOfEquationsSelect(system_number) => {
@@ -112,59 +126,39 @@ impl Application for ComputeRootUI {
             UIMessage::TabSelect(_)
             | UIMessage::SingleEquationSelect(_)
             | UIMessage::SystemOfEquationsSelect(_) => {
+                let request = RequestPackage::FunctionPoints {
+                    payload: self.build_selection(),
+                };
+
                 self.serial_port
-                    .try_send(RequestPackage::FunctionPoints {
-                        payload: FunctionPointsPayload {
-                            mode: self.mode,
-                            equation_number: match self.mode {
-                                EquationModeRaw::SingleEquation => {
-                                    self.single_equation.equation_number
-                                }
-                                EquationModeRaw::SystemOfEquations => {
-                                    self.system_of_equations_number
-                                }
-                            },
-                        },
-                    })
+                    .try_send(request)
                     .expect("could request function points");
             }
 
             _ => (),
         };
 
-        match message {
-            UIMessage::TabSelect(_)
-            | UIMessage::MethodSelect(_)
-            | UIMessage::Epsilon(_)
-            | UIMessage::SystemOfEquationsSelect(_)
-            | UIMessage::SingleEquationSelect(_) => {
-                self.serial_port
-                    .try_send(RequestPackage::ComputeRoot {
-                        payload: ComputeRootPayload {
-                            epsilon: self.epsilon,
-                            mode: match self.mode {
-                                EquationModeRaw::SingleEquation => request::EquationMode::Single {
-                                    method: self.single_equation.method,
-                                    equation_number: self.single_equation.equation_number,
-                                },
-                                EquationModeRaw::SystemOfEquations => {
-                                    request::EquationMode::SystemOfEquations {
-                                        system_number: self.system_of_equations_number,
-                                    }
-                                }
-                            },
-                        },
-                    })
-                    .expect("could request root");
-            }
-            _ => (),
+        let should_update_root = approx_changed
+            || match message {
+                UIMessage::TabSelect(_)
+                | UIMessage::MethodSelect(_)
+                | UIMessage::Epsilon(_)
+                | UIMessage::SystemOfEquationsSelect(_)
+                | UIMessage::SingleEquationSelect(_) => true,
+                _ => false,
+            };
+
+        if should_update_root {
+            let payload = self.build_compute_root_payload();
+            let request = RequestPackage::ComputeRoot { payload };
+
+            self.serial_port
+                .try_send(request)
+                .expect("could request root");
         }
 
         Command::none()
         // todo!();
-
-        // command sends request and awaits response
-        // Command::perform(, );
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -197,26 +191,50 @@ impl Application for ComputeRootUI {
         };
 
         const ROW_SPACING: f32 = 7.;
-        let single_equation_tab = column!(
-            Column::new()
-                .push(
-                    Column::with_children(single_equations)
-                        // width is considered as min_width by iced
-                        .width(Length::Fixed(300.))
-                        .spacing(10.)
-                        .align_items(iced::Alignment::Center),
-                )
-                .width(Length::Fill)
-                .align_items(iced::Alignment::Center),
-            row!(
-                row!(
-                    "epsilon:",
-                    text_input("", &format!("{}", self.epsilon)).on_input(|input| {
-                        UIMessage::Epsilon(input.parse().unwrap_or(self.epsilon))
-                    })
-                )
-                .spacing(ROW_SPACING)
-                .align_items(iced::Alignment::Center),
+        const COLUMN_SPACING: f32 = 10.;
+        let single_equation_tab = Column::new()
+            .push(
+                Column::with_children(single_equations)
+                    // width is considered as min_width by iced
+                    .width(Length::Fixed(300.))
+                    .spacing(COLUMN_SPACING)
+                    .align_items(iced::Alignment::Center),
+            )
+            .width(Length::Fill)
+            .padding(tabs_padding)
+            .align_items(iced::Alignment::Center);
+
+        let system_of_equations_tab = column!("1 - sin(x) / 2 - x", "0.7 - cos(y - 1) - y")
+            .spacing(COLUMN_SPACING)
+            .padding(tabs_padding)
+            .width(Length::Fill)
+            .align_items(iced::Alignment::Center);
+
+        let tabs_descriptor = Tabs::new(UIMessage::TabSelect)
+            .push(
+                EquationModeRaw::SingleEquation,
+                TabLabel::Text("Single equation".to_string()),
+                single_equation_tab,
+            )
+            .push(
+                EquationModeRaw::SystemOfEquations,
+                TabLabel::Text("System of Equations".to_string()),
+                system_of_equations_tab,
+            );
+
+        // should always be displayed
+        let parameters_row = row!(row!(
+            "Epsilon:",
+            text_input("", &format!("{:.4}", self.epsilon))
+                .on_input(|input| { UIMessage::Epsilon(input.parse().unwrap_or(self.epsilon)) })
+        )
+        .spacing(ROW_SPACING)
+        .align_items(iced::Alignment::Center))
+        .spacing(ROW_SPACING)
+        .align_items(iced::Alignment::Center);
+
+        let parameters_row = if let EquationModeRaw::SingleEquation = self.mode {
+            parameters_row.push(
                 row!(
                     "method:",
                     pick_list(
@@ -226,43 +244,42 @@ impl Application for ComputeRootUI {
                     )
                 )
                 .spacing(ROW_SPACING)
-                .align_items(iced::Alignment::Center)
+                .align_items(iced::Alignment::Center),
             )
-            .spacing(ROW_SPACING)
-            .align_items(iced::Alignment::Center)
-        )
-        .spacing(10.)
-        .padding(tabs_padding);
-
-        let system_of_equations_tab = column!("1 - sin(x) / 2 - x", "0.7 - cos(y - 1) - y")
-            .spacing(3.)
-            .padding(tabs_padding)
-            .width(Length::Fill)
-            .align_items(iced::Alignment::Center);
-
-        let selection = Selected {
-            mode: self.mode,
-            index: self.get_equation_number(),
+        } else {
+            parameters_row
         };
 
-        let tabs_descriptor = Tabs::new(UIMessage::TabSelect)
-                    .push(
-                        EquationModeRaw::SingleEquation,
-                        TabLabel::Text("Single equation".to_string()),
-                        single_equation_tab,
-                    )
-                    .push(
-                        EquationModeRaw::SystemOfEquations,
-                        TabLabel::Text("System of Equations".to_string()),
-                        system_of_equations_tab,
-                    );
+        let selection = self.build_selection();
+        let maybe_compute_root = self.plot.get_compute_root(selection);
+        let (output, is_error) = {
+            match maybe_compute_root {
+                Some(Ok(ComputeRootResponse {
+                    root: Point { x, y },
+                })) => (format!("x: {x:.4}; y: {y:.4}"), false),
+                Some(Err(err)) => (err.to_string(), true),
+                None => ("Loading...".to_owned(), false),
+            }
+        };
+
+        let output_element = match is_error {
+            false => Text::new(output),
+            true => Text::new(output).style(theme::Text::Color([0.8, 0.141, 0.004].into())),
+        };
+
+        let output_row = Row::new()
+            .push(Element::from("Output:"))
+            .push(output_element)
+            .spacing(ROW_SPACING)
+            .align_items(Alignment::Center);
 
         Column::new()
-            .push(
-                tabs_descriptor
-                    .set_active_tab(&self.mode),
-            )
+            .push(tabs_descriptor.set_active_tab(&self.mode))
+            .push(parameters_row)
+            .push(output_row)
             .push(self.plot.view(selection))
+            .spacing(COLUMN_SPACING)
+            .width(Length::Fill)
             .into()
     }
 
@@ -286,46 +303,43 @@ impl Application for ComputeRootUI {
         // messages from serail port thread. There is no point to
         // distinguish between approximation change and response
         // messages -- they all can be handled uniformly
-        let (mut command_sender, command_receiver) = mpsc::channel(CHANNEL_SIZE);
-        command_sender
-            .try_send(RequestPackage::FunctionPoints {
-                payload: FunctionPointsPayload {
-                    mode: EquationModeRaw::SingleEquation,
-                    equation_number: 0,
-                },
-            })
-            .expect("Could request function's points");
-
-        let default_choice = Selected {
+        let (command_sender, command_receiver) = mpsc::channel(CHANNEL_SIZE);
+        let default_choice = Selection {
             mode: EquationModeRaw::SingleEquation,
             index: 0,
         };
 
-        (
-            ComputeRootUI {
-                epsilon: 0.0625,
-                mode: default_choice.mode,
-                single_equation: SingleEquation {
-                    method: Method::Chord,
-                    equation_number: default_choice.index as u8,
-                },
-                system_of_equations_number: default_choice.index as u8,
-                serial_port: command_sender,
-                plot: FunctionPlot::new(),
+        let mut compute_root_ui = ComputeRootUI {
+            epsilon: 0.0625,
+            mode: default_choice.mode,
+            single_equation: SingleEquation {
+                method: Method::Chord,
+                equation_number: default_choice.index as u8,
             },
+            system_of_equations_number: default_choice.index as u8,
+            serial_port: command_sender,
+            plot: FunctionPlot::new(),
+        };
+
+        compute_root_ui
+            .serial_port
+            .try_send(RequestPackage::FunctionPoints {
+                payload: compute_root_ui.build_selection(),
+            })
+            .expect("Could request function's points");
+
+        compute_root_ui
+            .serial_port
+            .try_send(RequestPackage::ComputeRoot {
+                payload: compute_root_ui.build_compute_root_payload(),
+            })
+            .expect("could request root for selected equation upon start");
+
+        (
+            compute_root_ui,
             command::channel(CHANNEL_SIZE, move |sender| {
                 start_loop(command_receiver, sender)
             }),
         )
     }
-
-    // fn subscription(&self) -> iced::Subscription<Self::Message> {
-    //     // create and store sender to send commands
-    //     // initialize serail port thread
-    //     iced::subscription::channel(10, 10, |mut sender| async move {
-    //         loop {
-    //             sender.send(Message::SubscriptionInit(sender.clone()));
-    //         }
-    //     })
-    // }
 }
