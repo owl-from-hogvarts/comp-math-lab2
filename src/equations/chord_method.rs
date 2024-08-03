@@ -24,8 +24,8 @@ impl Solver<NonLinearEquation> for ChordSolver {
             // println!("{:-^80}", count + 1);
             let x = start
                 - ((equation.function)(start)
-                    / ((equation.function)(start) - (equation.function)(end)))
-                    * (start - end);
+                    / ((equation.function)(end) - (equation.function)(start)))
+                    * (end - start);
             // println!("x: {x:.5}");
 
             let y = (equation.function)(x);
@@ -38,7 +38,7 @@ impl Solver<NonLinearEquation> for ChordSolver {
                 return Err(MethodError::Diverges);
             }
 
-            if y > 0_f64 {
+            if y * (equation.function)(end) > 0. {
                 //     println!("y > 0");
                 //     println!("b = x");
                 end = x;
