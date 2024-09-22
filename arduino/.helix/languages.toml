@@ -1,0 +1,5 @@
+
+[language-server.rust-analyzer]
+config = { cargo = { target = "avr-unknown-gnu-atmega328", extraArgs = ["--release", "-Zunstable-options", "-Zbuild-std=core" ] }, check = { allTargets = false, workspace = false } }
+
+

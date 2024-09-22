@@ -1,0 +1,14 @@
+{
+  "rust-analyzer.check.allTargets": false,
+  "rust-analyzer.check.workspace": false,
+  "rust-analyzer.cargo.extraArgs": [
+    "--release",
+    "-Zunstable-options",
+    "-Zbuild-std=core"
+  ],
+  "rust-analyzer.cargo.target": "avr-unknown-gnu-atmega328",
+  "cSpell.words": [
+    "ruduino"
+  ],
+  "rust-analyzer.server.path": "rust-analyzer",
+}
