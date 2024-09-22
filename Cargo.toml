@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+
+members = [
+  "daemon",
+  "protocol",
+  "arduino",
+  "methods/non-linear-equataion-system"
+]
+
+[patch.crates-io]
+avr-libc = { path = "libc" }
+ruduino = { path = "ruduino" }
+avr-std-stub = {path = "avr-std-stub"}
+# iced_aw = { path = "iced_aw" }
+
+[profile.release]
+# debug = "full"
+opt-level = "s"
+lto = "fat"
+panic = "abort"
+
