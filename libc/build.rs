@@ -2,14 +2,24 @@ extern crate avr_mcu;
 extern crate bindgen;
 #[macro_use]
 extern crate lazy_static;
+extern crate reqwest;
+extern crate serde;
+extern crate serde_json;
+extern crate zip_extract;
 
 use avr_mcu::Mcu;
+use reqwest::header::{HeaderMap, HeaderValue};
+use serde_json::Value;
 
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, fs};
 
 const BINDINGS_DEST: &'static str = "src/bindings.rs";
+
+const LIBC_OWNER_REPO: &'static str = "avrdudes/avr-libc";
+const LIBC_LOCAL_PATH: &'static str = "avr-libc";
 
 /// Headers which can't be used from Rust.
 const HEADER_BLACKLIST: &'static [&'static str] = &[
@@ -39,7 +49,49 @@ fn architecture() -> avr_mcu::Architecture {
     }
 }
 
+fn download_libc() -> Result<(), reqwest::Error> {
+    let mut default_headers = HeaderMap::new();
+    default_headers.append(
+        "X-GitHub-Api-Version",
+        HeaderValue::from_static("2022-11-28"),
+    );
+    default_headers.append("User-Agent", HeaderValue::from_static("avr-rust-libc"));
+
+    let api = reqwest::blocking::Client::builder()
+        .default_headers(default_headers)
+        .build()
+        .unwrap();
+    let latest_release = api
+        .get(format!(
+            "https://api.github.com/repos/{LIBC_OWNER_REPO}/releases/latest"
+        ))
+        .send()?;
+    let body = latest_release.text()?;
+    let zipball_url = serde_json::from_str::<Value>(&body)
+        .unwrap()
+        .get("zipball_url")
+        .unwrap()
+        .as_str()
+        .unwrap()
+        .to_string();
+    eprintln!("cargo:warning={zipball_url}");
+    let zipball_response = api.get(zipball_url).send()?;
+    eprintln!("cargo:warning={:?}", zipball_response.content_length());
+
+    let zip_content = zipball_response.bytes()?;
+    zip_extract::extract(Cursor::new(zip_content), Path::new(LIBC_LOCAL_PATH), true);
+
+    Ok(())
+}
+
 fn main() {
+    if !std::fs::exists(LIBC_LOCAL_PATH).unwrap() {
+        match download_libc() {
+            Ok(_) => (),
+            Err(err) => return eprintln!("Something gone wrong: {err}"),
+        };
+    }
+
     if MCU.is_none() {
         println!("cargo:warning=not targeting a specific microcontroller, create a custom target specification to enable mcu-specific functionality");
     }

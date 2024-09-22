@@ -5,26 +5,5 @@ Cargo.lock
 # binden generated bindings
 src/bindings.rs
 
-avr-libc/**/Makefile
-avr-libc/**/Makefile.in
-avr-libc/aclocal.m4
-avr-libc/autom4te.cache
-avr-libc/avr-libc.spec
-avr-libc/avr/
-avr-libc/compile
-avr-libc/confdefs.h
-avr-libc/config.guess
-avr-libc/config.h*
-avr-libc/config.log
-avr-libc/config.status
-avr-libc/config.sub
-avr-libc/configure
-avr-libc/configure~
-avr-libc/depcomp
-avr-libc/include/avr/builtins.h
-avr-libc/include/avr/version.h
-avr-libc/include/util/delay.h
-avr-libc/install-sh
-avr-libc/missing
-avr-libc/stamp-h1
-avr-libc/config.log
+avr-libc
+avr-libc.bak

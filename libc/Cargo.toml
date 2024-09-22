@@ -18,3 +18,9 @@ keywords = ["avr", "libc", "arduino", "avr-gcc"]
 bindgen = "0.57"
 avr-mcu = "0.3"
 lazy_static = "1.4"
+reqwest = { version = "0.12.7", features = ["blocking"] }
+serde = { version = "1.0.0" }
+serde_json = { version = "1.0.0" }
+zip-extract = { version = "0.2.1" }
+
+[dependencies]
