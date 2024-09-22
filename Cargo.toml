@@ -10,6 +10,5 @@ ruduino = "0.4.0"
 avr-libc = "0.2.2"
 # avr-device = "0.5.4"
 protocol = { path = "../protocol" }
-libm = { path = "../libm" }
 # compiler_builtins = { git = "https://github.com/rust-lang/compiler-builtins" }
 

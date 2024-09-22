@@ -1,5 +1,3 @@
-use libm;
-
 use protocol::response::MethodError;
 use protocol::{point::Point, TNumber};
 
@@ -126,6 +124,6 @@ pub trait Logarithm {
 
 impl Logarithm for TNumber {
     fn ln(self) -> Self {
-        libm::logf(self)
+        unsafe { avr_libc::logf(self) }
     }
 }
