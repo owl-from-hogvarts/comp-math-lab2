@@ -100,7 +100,7 @@ cargo build --release
 
 # From Idea to Implementation
 
-![from-idea-to-implementation](./media/from-idea-to-implementation.mp4)
+https://github.com/user-attachments/assets/ff8903c5-750d-455f-b467-c37d2e30c2fb
 
 - What data I need?
 - Implement solver methods
