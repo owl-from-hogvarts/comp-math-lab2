@@ -13,12 +13,12 @@
 use core::cell::UnsafeCell;
 
 use ruduino::{
-    cores::current::{OCR0A, PCICR, PCMSK0, PCMSK1, PINB, TCCR0A, TCCR0B, TCNT0, TIMSK0},
-    interrupt::without_interrupts,
+    cores::current::{OCR0A, PCICR, PCMSK0, PINB, TCCR0A, TCCR0B, TCNT0, TIMSK0},
     Register,
 };
 
-use crate::{blink, lazy::Lazy};
+use crate::interrupts::without_interrupts;
+use crate::lazy::Lazy;
 
 const BUTTONS_AMOUNT: usize = 4;
 

@@ -1,13 +1,12 @@
 use core::ops::Deref;
 
-use ruduino::interrupt::without_interrupts;
+use crate::interrupts::without_interrupts;
 
 enum LazyState<T, F> {
     Uninit(F),
     Init(T),
     Poisoned,
 }
-
 
 /// Unsafe notice!
 /// Lazy is prooperly syncronized for atmega328:

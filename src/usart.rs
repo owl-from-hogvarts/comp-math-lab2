@@ -9,9 +9,9 @@ use ruduino::cores::current::USART0;
 use ruduino::modules::HardwareUsart;
 use ruduino::Register;
 
-use ruduino::interrupt::without_interrupts;
 use ruduino::RegisterBits;
 
+use crate::interrupts::without_interrupts;
 use crate::lazy::Lazy;
 use crate::ring_buffer;
 use crate::ring_buffer::RingBuffer;
@@ -52,7 +52,7 @@ impl From<OperationMode> for RegisterBits<UCSR0C> {
         // constants are defined in atmega328p reference
         match value {
             OperationMode::Async => RegisterBits::zero(),
-            OperationMode::Sync => UCSR0C::UMSEL00, // 1
+            OperationMode::Sync => UCSR0C::UMSEL00,     // 1
             OperationMode::MasterSPI => UCSR0C::UMSEL0, // 3
         }
     }
@@ -83,7 +83,7 @@ impl Usart<USART0> {
             // <USART0 as HardwareUsart>::ControlRegisterA::set(UCSR0A::U2X0);
             <USART0 as HardwareUsart>::ControlRegisterA::write(0);
             // configuration register
-            
+
             let config = UCSR0C::UCSZ0 | OperationMode::Async.into();
             <USART0 as HardwareUsart>::ControlRegisterC::write(config);
             // enable usart

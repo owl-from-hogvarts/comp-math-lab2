@@ -22,6 +22,7 @@ use equations::{
     SimpleIterationSolver, Solver, SolverInput, Trigonometry, LEFT_BORDER, POINT_AMOUNT,
     POINT_INTERVAL_LENGTH, RIGHT_BORDER,
 };
+use interrupts::without_interrupts;
 use lazy::Lazy;
 use protocol::point::{Point, PointCoordinate};
 use protocol::request::compute_method::Method;
@@ -31,12 +32,12 @@ use protocol::response::InitialApproximationsResponse;
 use protocol::TNumber;
 use protocol_handler::Connection;
 use ruduino::cores::current::port;
-use ruduino::interrupt::without_interrupts;
 use ruduino::Pin;
 use system_of_equations::{EquationWithPhi, SimpleIteratorSolverForSystems, SystemOfEquations};
 
 mod buttons;
 mod equations;
+mod interrupts;
 mod lazy;
 mod protocol_handler;
 mod ring_buffer;
