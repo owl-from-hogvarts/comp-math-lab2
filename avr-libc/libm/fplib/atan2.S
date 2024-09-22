@@ -27,13 +27,13 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: atan2.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: atan2.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
-/* float atan2 (float A, float B);	// A is y coord, B is x coord.
-     The atan2() function calculates the arc tangent of the two variables
+/* float atan2f (float A, float B);	// A is y coord, B is x coord.
+     The atan2f() function calculates the arc tangent of the two variables
      A and B. It is similar to calculating the arc tangent of A/B, except
      that the signs of both arguments are used to determine the quadrant
-     of the result. The atan2() function returns the result in radians,
+     of the result. The atan2f() function returns the result in radians,
      which is between -PI and PI (inclusive).
      
    Note:
@@ -66,7 +66,7 @@
 
 #define	disp	ZL		/* displacement high byte	*/
 
-FUNCTION atan2
+FUNCTION atan2f
 
 .L_nf:	XCALL	_U(__fp_pscA)
 	brcs	.L_nan
@@ -85,7 +85,7 @@ FUNCTION atan2
 .L_nan:	XJMP	_U(__fp_nan)
 .L_zr:	XJMP	_U(__fp_zero)
 
-ENTRY   atan2
+ENTRY   atan2f
   ; save 'y' sign
 	mov	disp, rA3
 	andi	disp, 0x80
@@ -126,7 +126,7 @@ ENTRY   atan2
 2:	push	disp
 	XCALL	_U(__divsf3_pse)
 	XCALL	_U(__fp_round)
-	XCALL	_U(atan)
+	XCALL	_U(atanf)
   ; restore disp and analize
 	pop	rB3		; hhi8()
 	tst	rB3

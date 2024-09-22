@@ -27,18 +27,18 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: sin.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: sin.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float sin (float A);
-     The sin() function returns the sine of A, where A is given in radians.
+/* float sinf (float A);
+     The sinf() function returns the sine of A, where A is given in radians.
  */
 
-ENTRY sin
+ENTRY sinf
 	push	rA3
 	XCALL	_U(__fp_rempio2)
 	pop	r0

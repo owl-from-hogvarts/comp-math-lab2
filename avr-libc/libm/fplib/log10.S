@@ -27,19 +27,19 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: log10.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: log10.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* double log (double A);
-   The log10() function returns the base 10 logarithm of A.
+/* float logf (float A);
+   The log10f() function returns the base 10 logarithm of A.
  */
 
 #define	INV_LN_10	0x3ede5bd9	/* 1.0/log(10.0)	*/
 
-ENTRY log10
-	XCALL	_U(log)
+ENTRY log10f
+	XCALL	_U(logf)
 	ldi	rB0,  lo8(INV_LN_10)
 	ldi	rB1,  hi8(INV_LN_10)
 	ldi	rB2, hlo8(INV_LN_10)

@@ -27,17 +27,17 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: atan.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: atan.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
-/* float atan (float A);
-     The atan() function calculates the arc tangent of A; that is
+/* float atanf (float A);
+     The atanf() function calculates the arc tangent of A; that is
      the value whose tangent is A.
 
    Algorithm:
 	if (x > 1)
-	    return Pi/2 - atan(1/x)
+	    return Pi/2 - atanf(1/x)
 	elif (x < -1)
-	    return -Pi/2 - atan(1/x)
+	    return -Pi/2 - atanf(1/x)
 	else
 	    return x * (1 - C1 * x**2 + ... + C8 * x**16)
  */
@@ -54,7 +54,7 @@
 
 #define	corr	YH
 
-ENTRY atan
+ENTRY atanf
 	push	corr
 	clr	corr
   ; inverse A, if needed
@@ -74,7 +74,7 @@ ENTRY atan
 	push	rA2
 	push	rA1
 	push	rA0
-	XCALL	_U(square)
+	XCALL	_U(squaref)
 	ldi	ZL, lo8(.L_table)
 	ldi	ZH, hi8(.L_table)
 	XCALL	_U(__fp_powser)

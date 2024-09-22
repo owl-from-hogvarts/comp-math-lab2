@@ -27,10 +27,10 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: asin.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: asin.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
-/* float asin (float A);
-     The asin() function returns the arc sine in radians and the value is
+/* float asinf (float A);
+     The asinf() function returns the arc sine in radians and the value is
      mathematically defined to be between -PI/2 and PI/2 (inclusive).
  */
 
@@ -44,7 +44,7 @@
 #define HI40_PI_2   0x3fc90fda		/* high 4 bytes of Pi/2	*/
 #define	LO40_PI_2   0xa2		/* lowest byte of Pi/2	*/
 
-ENTRY asin
+ENTRY asinf
   ; save A sign
 	push	rA3
   ; A = fabs(A)

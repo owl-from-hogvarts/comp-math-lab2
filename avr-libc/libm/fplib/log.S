@@ -27,15 +27,15 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: log.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: log.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* double log (double A)
-   The log() function returns the natural logarithm of A.
+/* float logf (float A)
+   The logf() function returns the natural logarithm of A.
  */
 
 #define	FL_M1	0xbf800000	/* -1.0	*/
@@ -47,7 +47,7 @@
 #define	rC0	r16
 #define	rCE	r15
 
-FUNCTION log
+FUNCTION logf
 
 .L_nf:	brts	.L_nan		; branch, if -Inf
 	XJMP	_U(__fp_mpack)	; pass as is: NaN --> NaN, +Inf --> +Inf
@@ -55,7 +55,7 @@ FUNCTION log
 .L_min:	set
 	XJMP	_U(__fp_inf)
 
-ENTRY log
+ENTRY logf
 	XCALL	_U(__fp_splitA)
 	brcs	.L_nf		; !isfinite(A)
 	tst	rA3

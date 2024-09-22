@@ -27,7 +27,7 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: fp_arccos.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: fp_arccos.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
@@ -74,7 +74,7 @@ ENTRY __fp_arccos
 	ldi	rA2, hlo8(FL_1)
 	ldi	rA3, hhi8(FL_1)
 	XCALL	_U(__subsf3)
-	XCALL	_U(sqrt)
+	XCALL	_U(sqrtf)
 
 	movw	rB0, rC0
 	movw	rB2, rC2
@@ -114,7 +114,7 @@ ENTRY __fp_arccos
 	ldi	rA2, hlo8(FL_1)
 	ldi	rA3, hhi8(FL_1)
 	XCALL	_U(__subsf3)
-	XCALL	_U(sqrt)
+	XCALL	_U(sqrtf)
   ; multiply
 	pop	rB0
 	pop	rB1

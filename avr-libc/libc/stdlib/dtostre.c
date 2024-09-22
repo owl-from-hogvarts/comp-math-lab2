@@ -26,7 +26,7 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: dtostre.c 2241 2011-05-11 12:59:48Z joerg_wunsch $ */
+/* $Id: dtostre.c 2553 2021-05-20 21:50:20Z joerg_wunsch $ */
 
 #include <stdlib.h>
 #include <avr/pgmspace.h>
@@ -49,7 +49,7 @@ dtostre (double val, char *sbeg, unsigned char prec, unsigned char flags)
     if (prec > 7) prec = 7;
     
     exp = __ftoa_engine (val, sbeg, prec, 0);
-    d = s = sbeg;
+    s = d = sbeg;
     vtype = *s++;
 
     if ((vtype & FTOA_MINUS) && !(vtype & FTOA_NAN))	/* like 'Glibc'	*/

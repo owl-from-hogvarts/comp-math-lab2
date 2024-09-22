@@ -26,14 +26,14 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: cbrt.S 2473 2015-04-09 08:10:22Z pitchumani $	*/
+/* $Id: cbrt.S 2554 2021-05-20 22:22:24Z joerg_wunsch $	*/
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* double cbrt (double)
+/* float cbrtf (float)
    Cube root function.
  */
 
@@ -72,7 +72,7 @@
 
 #define	REM	RD0
 
-FUNCTION cbrt
+FUNCTION cbrtf
 
 /* Division by 3.
    Input:
@@ -112,7 +112,7 @@ FUNCTION cbrt
 
 0:	XJMP	_U(__fp_mpack)
 
-ENTRY cbrt
+ENTRY cbrtf
   ; split and check arg.
 	XCALL	_U(__fp_splitA)
 	brcs	0b		; !isfinite(A)

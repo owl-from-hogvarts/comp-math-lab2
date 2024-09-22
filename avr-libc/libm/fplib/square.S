@@ -27,16 +27,16 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: square.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: square.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float square (float A);
-     The square() function returns square of A.
+/* float squaref (float A);
+     The squaref() function returns square of A.
  */
 
-ENTRY square
+ENTRY squaref
 	X_movw	rB0, rA0
 	X_movw	rB2, rA2	; B = A
 

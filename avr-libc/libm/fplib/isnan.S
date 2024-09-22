@@ -27,20 +27,20 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: isnan.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: isnan.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* int isnan (double)
-     The isnan() function returns a non-zero value if value is
+/* int isnanf (float)
+     The isnanf() function returns a non-zero value if value is
      "not-a-number" (NaN), and 0 otherwise.
    Notes:
      * It is implemented to save space, as there is a time effective
      isfinite() inline function.
  */
 
-ENTRY isnan
+ENTRY isnanf
 	XCALL	_U(__fp_splitA)
 	ldi	r24, 0
 	ldi	r25, 0

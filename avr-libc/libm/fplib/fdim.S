@@ -27,15 +27,15 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: fdim.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: fdim.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float fdim (float x, float y);
-     The fdim() function  return max(x-y,0). If x or y or both are NaN,
+/* float fdimf (float x, float y);
+     The fdimf() function  return maxf(x-y,0). If x or y or both are NaN,
      NaN is returned.
 
    Notes:
@@ -44,7 +44,7 @@
      is fast if both arguments are equal.
  */
 
-ENTRY fdim
+ENTRY fdimf
   ; sign(A) | sign(B)
 	mov	r0, rA3
 	or	r0, rB3

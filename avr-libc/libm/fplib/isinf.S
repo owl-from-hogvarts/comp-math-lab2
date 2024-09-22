@@ -27,22 +27,22 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
   POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: isinf.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: isinf.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* int isinf (double)
-     The isinf() function returns -1 if value represents negative
+/* int isinff (float)
+     The isinff() function returns -1 if value represents negative
      infinity, 1 if value represents positive infinity, and 0 otherwise.
    Notes:
      * It is implemented to save space, as there is a time effective
      isfinite() inline function.
  */
 
-ENTRY isinf
+ENTRY isinff
 	XCALL	_U(__fp_splitA)
 	ldi	r24, 0
 	ldi	r25, 0

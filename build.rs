@@ -1,6 +1,7 @@
-extern crate bindgen;
 extern crate avr_mcu;
-#[macro_use] extern crate lazy_static;
+extern crate bindgen;
+#[macro_use]
+extern crate lazy_static;
 
 use avr_mcu::Mcu;
 
@@ -12,20 +13,20 @@ const BINDINGS_DEST: &'static str = "src/bindings.rs";
 
 /// Headers which can't be used from Rust.
 const HEADER_BLACKLIST: &'static [&'static str] = &[
-    "avr/crc16.h", "avr/parity.h", "avr/delay.h", // Deprecated, moved to 'util'
+    "avr/crc16.h",
+    "avr/parity.h",
+    "avr/delay.h",  // Deprecated, moved to 'util'
     "avr/signal.h", // Deprecated, moved to `avr/interrupt.h`
-    "avr/wdt.h", // Uses inline assembly constraint I, gives out of range errors because
-                 // bindgen does not use an AVR assembler..
+    "avr/wdt.h",    // Uses inline assembly constraint I, gives out of range errors because
+    // bindgen does not use an AVR assembler..
     "stdfix-avrlibc.h", // Deprecated, use 'stdfix.h' instead.
-    "util/delay.h", "util/delay_basic.h", // relies on AVR-GCC specific optimisations
-    "util/setbaud.h", // mostly made of preprocessor magic
+    "util/delay.h",
+    "util/delay_basic.h", // relies on AVR-GCC specific optimisations
+    "util/setbaud.h",     // mostly made of preprocessor magic
 ];
 
-const DEVICE_SPECIFIC_HEADERS: &'static [&'static str] = &[
-    "avr/boot.h",
-    "avr/sleep.h",
-    "util/crc16.h",
-];
+const DEVICE_SPECIFIC_HEADERS: &'static [&'static str] =
+    &["avr/boot.h", "avr/sleep.h", "util/crc16.h"];
 
 lazy_static! {
     static ref MCU: Option<Mcu> = avr_mcu::current::mcu();
@@ -49,8 +50,13 @@ fn main() {
     let arch_dir = libc_dir.join("avr").join("lib").join(architecture().name());
     let static_lib_path = arch_dir.join("libc.a");
 
+    println!("static lib path is {}", static_lib_path.as_path().display());
+
     if !static_lib_path.exists() {
-        println!("avr-libc not yet built for '{}', building now", architecture().name());
+        println!(
+            "avr-libc not yet built for '{}', building now",
+            architecture().name()
+        );
         bootstrap(&libc_dir);
         configure(&libc_dir);
 
@@ -73,7 +79,11 @@ fn bootstrap(libc_dir: &Path) {
     cmd.current_dir(libc_dir);
     println!("{:?}", cmd);
 
-    if !cmd.status().expect("failed to bootstrap avr-libc").success() {
+    if !cmd
+        .status()
+        .expect("failed to bootstrap avr-libc")
+        .success()
+    {
         panic!("failed to bootstrap");
     }
 }
@@ -90,13 +100,20 @@ fn configure(libc_dir: &Path) {
 
     cmd.env("CC", "avr-gcc");
     if let Some(mcu) = MCU.as_ref() {
-        cmd.env("CFLAGS", format!("-mmcu={}", mcu.device.name.to_lowercase()));
+        cmd.env(
+            "CFLAGS",
+            format!("-mmcu={}", mcu.device.name.to_lowercase()),
+        );
     }
 
     cmd.current_dir(libc_dir);
     println!("{:?}", cmd);
 
-    if !cmd.status().expect("failed to configure avr-libc").success() {
+    if !cmd
+        .status()
+        .expect("failed to configure avr-libc")
+        .success()
+    {
         panic!("failed to configure");
     }
 }
@@ -125,7 +142,7 @@ fn headers_inside(dir: &Path, libc_path: &Path) -> Vec<PathBuf> {
                     if !is_header_blacklisted(&path, libc_path) {
                         headers.push(path.clone());
                     }
-                },
+                }
                 _ => (),
             }
         }
@@ -141,8 +158,8 @@ fn is_header_blacklisted(path: &Path, libc_path: &Path) -> bool {
         }
     }
 
-    is_header_in_list(path, libc_path, HEADER_BLACKLIST) ||
-        (MCU.is_none() && is_header_device_specific(path, libc_path))
+    is_header_in_list(path, libc_path, HEADER_BLACKLIST)
+        || (MCU.is_none() && is_header_device_specific(path, libc_path))
 }
 
 fn is_header_device_specific(path: &Path, libc_path: &Path) -> bool {
@@ -152,8 +169,7 @@ fn is_header_device_specific(path: &Path, libc_path: &Path) -> bool {
 fn is_header_in_list(path: &Path, libc_path: &Path, list: &[&str]) -> bool {
     let include_path = libc_path.join("include");
 
-    list.iter()
-        .any(|header| include_path.join(header) == path)
+    list.iter().any(|header| include_path.join(header) == path)
 }
 
 fn base_headers(libc_dir: &Path) -> Vec<PathBuf> {
@@ -173,11 +189,14 @@ fn mcu_define_name() -> Option<&'static str> {
 
 fn generate_bindings(libc_dir: &Path) {
     // Configure and generate bindings.
+    let avr_arch_name = format!("{:?}", architecture()).to_lowercase();
     let mut builder = bindgen::builder()
         .use_core()
         .ctypes_prefix("::rust_ctypes")
         .clang_arg("-Iavr-libc/include")
-        .clang_arg("-ffreestanding");
+        .clang_arg("-ffreestanding")
+        .clang_arg(format!("-mmcu={}", avr_arch_name))
+        .clang_arg("-lm");
 
     if let Some(define_name) = mcu_define_name() {
         builder = builder.clang_arg(format!("-D{}", define_name));
@@ -187,12 +206,10 @@ fn generate_bindings(libc_dir: &Path) {
         builder = builder.header(header_path.display().to_string());
     }
 
-    let bindings = builder
-        .generate()
-        .expect("failed to create bindings");
+    let bindings = builder.generate().expect("failed to create bindings");
 
     // Write the generated bindings to an output file.
-    bindings.write_to_file(BINDINGS_DEST)
+    bindings
+        .write_to_file(BINDINGS_DEST)
         .expect("could not write bindings to file");
 }
-

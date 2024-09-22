@@ -30,7 +30,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# $Id: configure.ac 2544 2017-08-04 08:50:27Z pitchumani $
+# $Id: configure.ac 2556 2022-01-28 22:50:17Z joerg_wunsch $
 #
 # Process this file with autoconf to produce a configure script.
 #
@@ -38,10 +38,10 @@
 dnl library versioning -- modify these on releases
 dnl        macro name           value            description
 m4_define([avr_libc_major],    [2])dnl           major version
-m4_define([avr_libc_minor],    [0])dnl           minor version
+m4_define([avr_libc_minor],    [1])dnl           minor version
 m4_define([avr_libc_revision], [0])dnl           revision (dot-dot version)
-m4_define([avr_libc_revision_suffix], [svn])dnl  revision suffix (if any)
-m4_define([avr_libc_reldate],  [20150209])dnl    release date
+m4_define([avr_libc_revision_suffix], [])dnl  revision suffix (if any)
+m4_define([avr_libc_reldate],  [20220128])dnl    release date
 dnl end of library versioning data
 
 m4_define([avr_libc_version],
@@ -54,7 +54,7 @@ m4_define([avr_libc_version_numeric],
 AC_INIT(avr-libc, avr_libc_version, avr-libc-dev@nongnu.org)
 
 AC_PREREQ(2.59)
-AC_REVISION($Revision: 2544 $)
+AC_REVISION($Revision: 2556 $)
 
 AC_CONFIG_SRCDIR([doc/examples/demo/demo.c])
 AC_CONFIG_HEADER([config.h])

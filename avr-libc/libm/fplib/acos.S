@@ -27,10 +27,10 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: acos.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: acos.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
-/* float acos (float x);
-     The acos() function calculates the arc cosine of x; that is the value
+/* float acosf (float x);
+     The acosf() function calculates the arc cosine of x; that is the value
      whose cosine is x.
  */
  
@@ -43,7 +43,7 @@
 #define	HI40_PI	0x40490FDA	/* Pi	*/
 #define	LO40_PI	0xA2
 
-ENTRY acos
+ENTRY acosf
   ; save A sign
 	push	rA3
   ; A = arccos(fabs(A))

@@ -27,20 +27,20 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: fmod.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: fmod.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* double fmod (double x, double y);
-     The fmod() function computes the remainder of dividing x by y. The
+/* float fmodf (float x, float y);
+     The fmodf() function computes the remainder of dividing x by y. The
      return value is x - n*y, where n is the quotient of x/y, rounded
      towards zero to an integer.
  */
 
-FUNCTION fmod
+FUNCTION fmodf
 
 0:	XCALL	_U(__fp_pscA)
 	brcs	.L_nan		; isnan(A)
@@ -51,7 +51,7 @@ FUNCTION fmod
 .L_nan:	XJMP	_U(__fp_nan)
 .L_sz:	XJMP	_U(__fp_szero)
 
-ENTRY fmod
+ENTRY fmodf
   ; split and check exceptions
 	mov	ZL, rA3		; save
 	XCALL	_U(__fp_split3)

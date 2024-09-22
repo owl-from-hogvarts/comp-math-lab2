@@ -27,16 +27,16 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: cos.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: cos.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float cos (float A);
-     The cos() function returns the cosine of A, where A is given in
+/* float cosf (float A);
+     The cosf() function returns the cosine of A, where A is given in
      radians.
  */
-ENTRY cos
+ENTRY cosf
 	XCALL	_U(__fp_rempio2)
 	inc	ZL
 	XJMP	_U(__fp_sinus)

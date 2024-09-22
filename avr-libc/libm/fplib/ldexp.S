@@ -27,26 +27,26 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: ldexp.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: ldexp.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* double ldexp (double x, int exp)
-   The ldexp() function returns the result of multiplying the
+/* float ldexpf (float x, int exp)
+   The ldexpf() function returns the result of multiplying the
    floating-point number x by 2 raised to the power exp.
  */
 #define	exp_lo	r20
 #define	exp_hi	r21
 
-FUNCTION ldexp
+FUNCTION ldexpf
 
 .L_inf:	XJMP	_U(__fp_inf)
 .L_pk:	XJMP	_U(__fp_mpack)
 
-ENTRY ldexp
+ENTRY ldexpf
 	XCALL	_U(__fp_splitA)
 	brcs	.L_pk			; as is
 	tst	rA3

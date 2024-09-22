@@ -27,23 +27,23 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: signbit.S 1491 2007-12-02 02:36:57Z dmix $ */
+/* $Id: signbit.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/*  int signbit (double x);
+/*  int signbitf (float x);
 
-    The signbit() function returns a nonzero value if the value of x has
+    The signbitf() function returns a nonzero value if the value of x has
     its sign bit set. This is not the same as `x < 0.0', because IEEE 754
     floating point allows zero to be signed. The comparison `-0.0 < 0.0'
-    is false, but `signbit (-0.0)' will return a nonzero value.
+    is false, but `signbitf (-0.0)' will return a nonzero value.
 
     This implementation returns 1 if sign bit is set. This corresponds
     to builtin GCC realization.
  */
 
-ENTRY signbit
+ENTRY signbitf
 	lsl	rA3
 	sbc	rA2, rA2
 	neg	rA2

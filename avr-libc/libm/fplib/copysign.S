@@ -27,17 +27,17 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: copysign.S 1173 2007-01-14 15:04:40Z dmix $ */
+/* $Id: copysign.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float copysign (float x, float y);
-     The copysign() function returns x but with the sign of y.
+/* float copysignf (float x, float y);
+     The copysignf() function returns x but with the sign of y.
      They work even if x or y are NaN or zero.
  */
 
-ENTRY   copysign
+ENTRY   copysignf
 	bst	rB3, 7
 	bld	rA3, 7
 	ret

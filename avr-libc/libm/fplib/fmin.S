@@ -27,20 +27,20 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: fmin.S 2191 2010-11-05 13:45:57Z arcanum $ */
+/* $Id: fmin.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float fmin (float x, float y);
-     The fmin() function returns the lesser of the two values x and y.
+/* float fminf (float x, float y);
+     The fminf() function returns the lesser of the two values x and y.
      If an argument is NaN, the other argument is returned. If both
      arguments are NaN, NaN is returned.
  */
 
-ENTRY fmin
+ENTRY fminf
 	lsl	rA3
 	sbc	rAE, rAE	; rAE = (A < 0) ? -1 : 0
 	lsl	rB3

@@ -26,7 +26,7 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: lround.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: lround.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 
 #if !defined(__AVR_TINY__)
@@ -34,8 +34,8 @@
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* long lround (double A);
-     The lround() function rounds A to the nearest integer, but rounds
+/* long lroundf (float A);
+     The lroundf() function rounds A to the nearest integer, but rounds
      halfway cases away from zero (instead of to the nearest even integer).
      This function is similar to round() function, but it differs in
      type of return value and in that an overflow is possible.
@@ -52,7 +52,7 @@
    Objections to saturation are listen in __fixunssfsi.S file.
  */
 
-ENTRY lround
+ENTRY lroundf
 	XCALL	_U(__fp_splitA)
 	brcs	.L_err
   ; A is finite

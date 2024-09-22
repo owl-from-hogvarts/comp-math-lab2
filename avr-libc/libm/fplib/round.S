@@ -26,7 +26,7 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: round.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: round.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
@@ -48,7 +48,7 @@
      - merge to float
    This is a balance between space and speed.
  */
-ENTRY round
+ENTRY roundf
 	XCALL	_U(__fp_splitA)
 	brcs	.L_nf
   ; A is finite

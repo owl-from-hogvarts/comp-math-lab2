@@ -27,20 +27,20 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: fmax.S 2191 2010-11-05 13:45:57Z arcanum $ */
+/* $Id: fmax.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* float fmax (float x, float y);
-     The fmax() function returns the greater of the two values x and y.
+/* float fmaxf (float x, float y);
+     The fmaxf() function returns the greater of the two values x and y.
      If an argument is NaN, the other argument is returned. If both
      arguments are NaN, NaN is returned.
  */
 
-ENTRY fmax
+ENTRY fmaxf
 	lsl	rA3
 	sbc	rAE, rAE	; rAE = (A < 0) ? -1 : 0
 	lsl	rB3

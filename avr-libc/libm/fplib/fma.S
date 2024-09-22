@@ -27,15 +27,15 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: fma.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: fma.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* double fma (double A, double B, double C)
-     The `fma' function performs floating-point multiply-add. This is the   
+/* float fmaf (float A, float B, float C)
+     The `fmaf' function performs floating-point multiply-add. This is the   
      operation (A * B) + C, but the intermediate result is not rounded to   
      the destination type.  This can sometimes improve the precision of a
      calculation.
@@ -44,7 +44,7 @@
 #define	rC0	r14	/* lower byte of arg. C	*/
 #define	rC2	r16
 
-ENTRY fma
+ENTRY fmaf
 	XCALL	_U(__mulsf3x)
 	X_movw	rB0, rC0
 	X_movw	rB2, rC2

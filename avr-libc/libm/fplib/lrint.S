@@ -26,15 +26,15 @@
    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
    POSSIBILITY OF SUCH DAMAGE. */
 
-/* $Id: lrint.S 2473 2015-04-09 08:10:22Z pitchumani $ */
+/* $Id: lrint.S 2554 2021-05-20 22:22:24Z joerg_wunsch $ */
 
 #if !defined(__AVR_TINY__)
 
 #include "fp32def.h"
 #include "asmdef.h"
 
-/* long lrint (double A);
-     The lrint() function rounds A to the nearest integer, rounding the
+/* long lrintf (float A);
+     The lrintf() function rounds A to the nearest integer, rounding the
      halfway cases to the even integer direction. (That is both 1.5 and
      2.5 values are rounded to 2). This function is similar to rint()
      function, but it differs in type of return value and in that an
@@ -50,7 +50,7 @@
      - restore the sign
  */
 
-ENTRY lrint
+ENTRY lrintf
 	XCALL	_U(__fp_splitA)
 	brcs	.L_err
   ; A is finite
