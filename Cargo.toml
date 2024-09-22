@@ -39,3 +39,26 @@ avr-mcu = "0.3"
 
 [package.metadata.docs.rs]
 all-features = true # we specifically want to enable 'all-mcus' for documentation
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = [
+  'cfg(avr_mcu_atmega48)',
+  'cfg(avr_mcu_atmega88)',
+  'cfg(avr_mcu_atmega48a)',
+  'cfg(avr_mcu_atmega168a)',
+  'cfg(avr_mcu_atmega88p)',
+  'cfg(avr_mcu_atmega168p)',
+  'cfg(avr_mcu_atmega88pa)',
+  'cfg(avr_mcu_atmega168)',
+  'cfg(avr_mcu_atmega328p)',
+  'cfg(avr_mcu_atmega48pa)',
+  'cfg(avr_mcu_atmega168pa)',
+  'cfg(avr_mcu_atmega48p)',
+  'cfg(avr_mcu_atmega328)',
+  'cfg(avr_mcu_atmega328)',
+  'cfg(avr_mcu_atmega88a)',
+  'cfg(avr_mcu_atmega48)'
+]
+
+
